@@ -8,14 +8,12 @@ const sendErrorForDev = (err, res) =>
   });
 
 const sendErrorForProd = (err, res) => {
-  // إذا كان الخطأ من صنعنا (Operational Error) نرسل الرسالة للمستخدم
   if (err.isOperational) {
     return res.status(err.statusCode).json({
       status: err.status,
       message: err.message,
     });
   }
-  // إذا كان خطأ برمجي غير متوقع، نرسل رسالة عامة لحماية تفاصيل السيرفر
   res.status(500).json({
     status: 'error',
     message: 'Something went very wrong!',

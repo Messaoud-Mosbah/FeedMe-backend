@@ -47,13 +47,11 @@ const RestaurantProfile = sequelize.define("RestaurantProfile", {
     allowNull: true,
   },
 
-  // من واجهة Restaurant Details
   kitchenCategories: {
     type: DataTypes.JSON,
     allowNull: false,
     validate: {
         isValidCategory(value) {
-            // التحقق من أن كل تصنيف يرسله المستخدم موجود في القائمة لدينا
             const isValid = value.every(cat => KITCHEN_TYPES.includes(cat));
             if (!isValid) {
                 throw new Error(`Invalid kitchen category. Allowed: ${KITCHEN_TYPES.join(', ')}`);

@@ -17,7 +17,7 @@ const UserProfile = sequelize.define("UserProfile", {
   },
   city: {
     type: DataTypes.STRING(50),
-    allowNull: true, // اختياري حسب الصورة
+    allowNull: true,
   },
   phone: {
     type: DataTypes.INTEGER(20),
@@ -25,15 +25,14 @@ const UserProfile = sequelize.define("UserProfile", {
   },
   bio: {
     type: DataTypes.TEXT,
-    allowNull: true, // اختياري
+    allowNull: true, 
   },
-  // حقول التفضيلات (Preferences) من الصورة الثانية
   usagePreferences: {
-    type: DataTypes.JSON, // لتخزين مصفوفة مثل ["Follow healthy food", "Write reviews"]
+    type: DataTypes.JSON, 
     allowNull: true,
   },
   kitchenCategories: {
-    type: DataTypes.JSON, // لتخزين مصفوفة مثل ["Vegetarian", "Seafood"]
+    type: DataTypes.JSON, 
     allowNull: true,
   },
   userId: {
