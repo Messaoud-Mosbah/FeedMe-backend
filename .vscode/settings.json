@@ -1,11 +1,10 @@
 //This configuration improves
-//  code navigation by visually 
+//  code navigation by visually
 // separating key structures
-//  (like Classes and Interfaces) 
+//  (like Classes and Interfaces)
 // and updates the spell
-//  checker to recognize 
+//  checker to recognize
 // "uuidv" as a valid term.
-
 
 {
   "separators.enabledSymbols": [
@@ -15,4 +14,21 @@
     "Namespaces",
     "Structs"
   ],
+  "sqltools.connections": [
+    {
+      "mysqlOptions": {
+        "authProtocol": "default",
+        "enableSsl": "Disabled"
+      },
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 3306,
+      "driver": "MySQL",
+      "name": "Nardjis",
+      "database": "sys",
+      "username": "root",
+      "connectionTimeout": 60
+    }
+  ]
 }

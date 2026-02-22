@@ -5,9 +5,11 @@ const {
   getAllUsers,
   getUser,
   getUserByIdentifier,
-  updateUser,
+  updateUserMain,
+  updateUserProfile,
+  updateRestaurantProfile,
   deleteUser,
-  changeUserPassword
+  changeUserPassword,
 } = require("../services/userService");
 
 const {
@@ -16,21 +18,68 @@ const {
   getUserValidator,
   deleteUserValidator,
   getUserByIdentifierValidator,
-  changeUserPasswordValidator // تأكد من استيراد الـ Validator الخاص بالباسورد
+  changeUserPasswordValidator,
+  ProfileBasicValidator,
+  PreferencesValidator,
+  RestaurantBasicValidator,
+  RestaurantLocationValidator,
+  RestaurantDetailsValidator,
+  RestaurantServicesValidator,
 } = require("../utils/validators/userValidator");
 
 const router = express.Router();
 
-router.post("/", createUserValidator, createUser);
+//-----AUTH & BASIC CRUD
+
+router.post("/", ...createUserValidator, createUser);
 router.get("/", getAllUsers);
-router.get("/user", getUserByIdentifierValidator, getUserByIdentifier);
+router.get("/user", ...getUserByIdentifierValidator, getUserByIdentifier);
+router.put(
+  "/changeUserPassword/:id",
+  ...changeUserPasswordValidator,
+  changeUserPassword,
+);
+router.get("/:id", ...getUserValidator, getUser);
+router.put("/:id", ...updateUserValidator, updateUserMain);
+router.delete("/:id", ...deleteUserValidator, deleteUser);
 
-// ✅ التصحيح: كان هناك تكرار لاسم الدالة (changeUserPassword) مرتين
-// يجب وضع الـ Validator أولاً ثم الـ Service
-router.put("/changeUserPassword/:id", changeUserPasswordValidator, changeUserPassword);
+//----- NORMAL USER PROFILE
 
-router.get("/:id", getUserValidator, getUser);
-router.put("/:id", updateUserValidator, updateUser);
-router.delete("/:id", deleteUserValidator, deleteUser);
+// Page 1 – Basic Info
+router.put("/profile/basic/:id", ...ProfileBasicValidator, updateUserProfile);
+// Page 2 – Preferences (Food + Usage)
+router.put(
+  "/profile/preferences/:id",
+  ...PreferencesValidator,
+  updateUserProfile,
+);
+
+//------- RESTAURANT PROFILE
+// Page 1 – Basic Info
+router.put(
+  "/restaurant/basic/:id",
+  ...RestaurantBasicValidator,
+  updateRestaurantProfile,
+);
+
+// Page 2 – Location Info
+router.put(
+  "/restaurant/location/:id",
+  ...RestaurantLocationValidator,
+  updateRestaurantProfile,
+);
+// Page 3 – Details
+router.put(
+  "/restaurant/details/:id",
+  ...RestaurantDetailsValidator,
+  updateRestaurantProfile,
+);
+
+// Page 4 – Services
+router.put(
+  "/restaurant/services/:id",
+  ...RestaurantServicesValidator,
+  updateRestaurantProfile,
+);
 
 module.exports = router;

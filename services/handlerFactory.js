@@ -1,124 +1,194 @@
 const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcryptjs");
 const ApiError = require("../utils/apiError");
-const User = require("../models/userModel"); 
-const { Op } = require("sequelize"); // ضروري جداً لعمليات البحث المعقدة (OR)
 
-// 1. Create User
-exports.createUser = (Model) =>
-  asyncHandler(async (req, res) => {
-    // Sequelize يستخدم نفس الاسم create
-    const doc = await Model.create(req.body);
-    res.status(201).json({ data: doc });
+const { User, UserProfile, RestaurantProfile } = require("../models/index");
+
+/* CREATE USER */
+exports.createUser = asyncHandler(async (req, res) => {
+  const { role } = req.body;
+
+  // Create main User only
+  const user = await User.create({
+    userName: req.body.userName,
+    email: req.body.email,
+    password: req.body.password,
+    role: role || "user",
   });
 
-// 2. Get All Users
-exports.getallUsers = (Model) =>
-  asyncHandler(async (req, res) => {
-    // التغيير: findAll بدلاً من find
-    const docs = await Model.findAll();
-    res.status(200).json({ data: docs });
+  res.status(201).json({ status: "success", data: user });
+});
+// GET ALL USERS
+exports.getAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.findAll({
+    include: [UserProfile, RestaurantProfile],
   });
+  res
+    .status(200)
+    .json({ results: users.length, status: "success", data: users });
+});
 
-// 3. Get Single User
-exports.getSingleUser = (Model) =>
-  asyncHandler(async (req, res, next) => { 
-    // التغيير: findByPk للبحث بالمفتاح الأساسي (Primary Key)
-    const doc = await Model.findByPk(req.params.id);
-    if (!doc) {
-      return next(new ApiError(`No user found for this id ${req.params.id}`, 404));
-    }
-    res.status(200).json({ data: doc });
+// GET SINGLE USER BY ID
+
+exports.getUser = asyncHandler(async (req, res, next) => {
+  const user = await User.findByPk(req.params.id, {
+    include: [UserProfile, RestaurantProfile],
   });
+  if (!user)
+    return next(new ApiError(`No user found for id ${req.params.id}`, 404));
+  res.status(200).json({ status: "success", data: user });
+});
 
-// 4. Get specific user by email or userName
+// GET USER BY IDENTIFIER (email or username)
+const { Op } = require("sequelize");
+
 exports.getUserByIdentifier = asyncHandler(async (req, res, next) => {
   const { identifier } = req.query;
 
-  // التغيير: استخدام Op.or و كائن where
   const user = await User.findOne({
     where: {
-      [Op.or]: [
-        { email: identifier },
-        { userName: identifier }
-      ]
-    }
+      [Op.or]: [{ email: identifier }, { userName: identifier }],
+    },
+    include: [UserProfile, RestaurantProfile],
   });
 
-  if (!user) {
-    return next(new ApiError(`No user found for: ${identifier}`, 404));
-  }
+  if (!user) return next(new ApiError(`No user found for: ${identifier}`, 404));
 
   res.status(200).json({ status: "success", data: user });
 });
 
-// 5. Update user information
-exports.updateUser = asyncHandler(async (req, res, next) => {
-  // التغيير: update ترجع مصفوفة فيها عدد الصفوف المتأثرة
-  const [updatedRows] = await User.update(
-    {
-      userName: req.body.userName,
-      email: req.body.email,
-      // تأكد أن phone موجود في الـ Model الخاص بـ MySQL
-    },
-    {
-      where: { id: req.params.id }
-    }
-  );
-
-  if (updatedRows === 0) {
-    return next(new ApiError(`No document for this id ${req.params.id}`, 404));
-  }
-
-  // لجلب البيانات الجديدة بعد التحديث
-  const updatedDoc = await User.findByPk(req.params.id);
-  res.status(200).json({ data: updatedDoc });
-});
-
-// 6. Change the password
-exports.changeUserPassword = asyncHandler(async (req, res, next) => {
-  // في Sequelize الباسورد يأتي تلقائياً إلا لو قمت بعمل Scope لإخفائه
+//UPDATE USER
+exports.updateUserMain = asyncHandler(async (req, res, next) => {
   const user = await User.findByPk(req.params.id);
 
-  if (!user) {
-    return next(new ApiError(`No user found for this id ${req.params.id}`, 404));
-  }
+  if (!user)
+    return next(new ApiError(`No user found for id ${req.params.id}`, 404));
 
-  const isCorrectPassword = await bcrypt.compare(
-    req.body.currentPassword, 
-    user.password           
-  );
+  const { userName, email } = req.body;
 
-  if (!isCorrectPassword) {
-    return next(new ApiError("Current password is wrong", 401));
-  }
-
-  // التغيير: إسناد القيمة ثم استدعاء save (سيعمل الـ beforeSave hook لتشفيراً)
-  user.password = req.body.password;
-  user.passwordChangedAt = new Date();
+  if (userName) user.userName = userName;
+  if (email) user.email = email;
 
   await user.save();
 
-  res.status(200).json({ 
-    status: "success",
-    message: "Password changed successfully" 
+  res.status(200).json({ status: "success", data: user });
+});
+// UPDATE USER PROFILE
+exports.updateUserProfile = asyncHandler(async (req, res, next) => {
+  const user = await User.findByPk(req.params.id);
+
+  if (!user || user.role !== "user")
+    return next(new ApiError("User profile not found", 404));
+
+  const allowedFields = [
+    "fullName",
+    "profilePicture",
+    "city",
+    "phone",
+    "bio",
+    "socialLinks",
+    "foodPreferences",
+    "usagePreferences",
+  ];
+
+  const filteredData = {};
+  allowedFields.forEach((field) => {
+    if (req.body[field] !== undefined) {
+      filteredData[field] = req.body[field];
+    }
   });
+
+  let profile = await UserProfile.findOne({
+    where: { userId: user.id },
+  });
+
+  if (profile) {
+    await profile.update(filteredData);
+  } else {
+    profile = await UserProfile.create({
+      userId: user.id,
+      ...filteredData,
+    });
+  }
+
+  res.status(200).json({ status: "success", data: profile });
+});
+// UPDATE RESTURANT PROFILE
+exports.updateRestaurantProfile = asyncHandler(async (req, res, next) => {
+  const user = await User.findByPk(req.params.id);
+  if (!user || user.role !== "restaurant") {
+    return next(new ApiError("Restaurant profile not found", 404));
+  }
+
+  const allowedFields = [
+    "restaurantName",
+    "businessEmail",
+    "phoneNumber",
+    "profilePicture",
+    "city",
+    "wilaya",
+    "street",
+    "postalCode",
+    "googleMapsLink",
+    "kitchenCategories",
+    "openingHoursFrom",
+    "openingHoursTo",
+    "daysOpen",
+    "services",
+    "businessRegistrationNumber",
+    "description",
+  ];
+
+  const filteredData = {};
+  allowedFields.forEach((field) => {
+    if (req.body[field] !== undefined) filteredData[field] = req.body[field];
+  });
+
+  let profile = await RestaurantProfile.findOne({ where: { userId: user.id } });
+
+  if (profile) {
+    await profile.update(filteredData, { fields: Object.keys(filteredData) });
+  } else {
+    profile = await RestaurantProfile.create({
+      userId: user.id,
+      ...filteredData,
+    });
+  }
+
+  res.status(200).json({ status: "success", data: profile });
+});
+//CHANGE PASSWORD
+
+exports.changeUserPassword = asyncHandler(async (req, res, next) => {
+  const user = await User.findByPk(req.params.id);
+  if (!user)
+    return next(new ApiError(`No user found for id ${req.params.id}`, 404));
+
+  const isCorrect = await bcrypt.compare(
+    req.body.currentPassword,
+    user.password,
+  );
+  if (!isCorrect) return next(new ApiError("Current password is wrong", 401));
+
+  user.password = req.body.password;
+  user.passwordChangedAt = Date.now();
+  await user.save();
+
+  res
+    .status(200)
+    .json({ status: "success", message: "Password changed successfully" });
 });
 
-// 7. Delete User
-exports.deleteUser = (Model) =>
-  asyncHandler(async (req, res, next) => { 
-    // التغيير: destroy بدلاً من findByIdAndDelete
-    const deletedRow = await Model.destroy({
-      where: { id: req.params.id }
-    });
-
-    if (!deletedRow) {
-      return next(new ApiError(`No user found for this id ${req.params.id}`, 404));
-    }
-
-    res.status(200).json({
-      status: "success",
-      message: "User deleted successfully",
-    });   
+// DELETE USER
+exports.deleteUser = asyncHandler(async (req, res, next) => {
+  const deleted = await User.destroy({
+    where: { id: req.params.id },
   });
+
+  if (!deleted)
+    return next(new ApiError(`No user found for id ${req.params.id}`, 404));
+
+  res
+    .status(200)
+    .json({ status: "success", message: "User deleted successfully" });
+});
