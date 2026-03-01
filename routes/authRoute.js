@@ -11,7 +11,8 @@ const {
     verifyEmail,
     sendVerificationEmail,
     updateUserProfile,
-    updateRestaurantProfile
+    updateRestaurantProfile,
+    allwodTo
 
 } = require('../services/authService');
 
@@ -55,7 +56,7 @@ router.get('/reset-password/:token', (req, res) => {
   `);
 });
 
-router.post('/reset-password/:token',validatePassword, resetPassword);
+router.post('/reset-password',protect,validatePassword, resetPassword);
 
 
 
@@ -65,11 +66,15 @@ router.post('/reset-password/:token',validatePassword, resetPassword);
 ///----- NORMAL USER PROFILE
 
 // Page 1 – Basic Info
-router.put("/profile/basic", protect, ...ProfileBasicValidator, updateUserProfile);
+router.put("/profile/basic", protect,
+      allwodTo("USER,ADMIN"),
+ ...ProfileBasicValidator, updateUserProfile);
 
 // Page 2 – Preferences (Food + Usage)
 router.put(
   "/profile/preferences",
+    allwodTo("USER,ADMIN"),
+
   protect,
   ...PreferencesValidator,
   updateUserProfile,
@@ -81,6 +86,8 @@ router.put(
 router.put(
   "/restaurant/basic",
   protect,
+    allwodTo("RESTAURANT,ADMIN"),
+
   ...RestaurantBasicValidator,
   updateRestaurantProfile,
 );
@@ -89,7 +96,8 @@ router.put(
 router.put(
   "/restaurant/location",
   protect,
-  ...RestaurantLocationValidator,
+  allwodTo("RESTAURANT,ADMIN"),
+  RestaurantLocationValidator,
   updateRestaurantProfile,
 );
 
@@ -97,6 +105,8 @@ router.put(
 router.put(
   "/restaurant/details",
   protect,
+    allwodTo("RESTAURANT,ADMIN"),
+
   ...RestaurantDetailsValidator,
   updateRestaurantProfile,
 );
@@ -105,6 +115,8 @@ router.put(
 router.put(
   "/restaurant/services",
   protect,
+    allwodTo("RESTAURANT,ADMIN"),
+
   ...RestaurantServicesValidator,
   updateRestaurantProfile,
 );

@@ -122,6 +122,7 @@ const forgotPassword = asyncHandler(async (req, res, next) => {
 // @desc    Protect Middleware
 const protect = asyncHandler(async (req, res, next) => {
     let token;
+    //check if token existe
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
     }
@@ -129,19 +130,36 @@ const protect = asyncHandler(async (req, res, next) => {
     if (!token) {
         return next(new ApiError('You are not logged in, please login', 401));
     }
-
+//verify token expired time 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    //verfiy that the user existe
     const currentUser = await User.findByPk(decoded.id);
     
     if (!currentUser) {
         return next(new ApiError('The user belonging to this token no longer exists', 401));
+    }
+
+
+    //check if user change the password after token creating
+    if(currentUser.passwordChangedAt){
+const passwordChangedAtTimestamp = parseInt(currentUser.passwordChangedAt.getTime() / 1000, 10);        if(passwordChangedAtTimestamp>decoded.iat){
+                    return next(new ApiError('the user change his password .please login again...', 401));
+
+        }
     }
     
     req.user = currentUser;
     next();
 });
 
-
+//permissions
+const allwodTo=(...roles)=>
+    asyncHandler(async(req,res,next) => {
+    if(!roles.includes(req.user.role)){
+                    return  next(new ApiError('you are not allow to access to this routes', 403)); 
+                  }
+                  next();
+})
 
 
 // @desc    Reset Password
@@ -274,5 +292,6 @@ module.exports = {
     verifyEmail, 
     sendVerificationEmail ,
     updateUserProfile,
-    updateRestaurantProfile
+    updateRestaurantProfile,
+    allwodTo
 };
