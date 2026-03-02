@@ -22,103 +22,34 @@ const {
     updateUserRoleValidtor,
     ProfileBasicValidator,
     validatePassword,
-PreferencesValidator,
-RestaurantBasicValidator ,
-RestaurantLocationValidator,
-RestaurantDetailsValidator,
-RestaurantServicesValidator
+    PreferencesValidator,
+    RestaurantBasicValidator ,
+    RestaurantLocationValidator,
+    RestaurantDetailsValidator,
+    RestaurantServicesValidator
 } = require("../utils/validators/authValidators");
 
-// --- مسارات التسجيل والدخول (أساس MAIN) ---
-router.post("/login", loginValidator, login);
+//des    sign up & log ib
 router.post("/signup", signupValidator, signup);
-//verify the existe of the email
 router.get('/verify-email/:token', verifyEmail);
-
 router.post('/send-verificati-on-email', protect, sendVerificationEmail);
 router.patch("/signup/role", protect, updateUserRoleValidtor, updateUserRole);
 
-
-// 1. طلب رابط نسيان كلمة المرور
+router.post("/login", loginValidator, login);
 router.post('/forgot-password', forgotPassword);
-
-// 2. عرض واجهة إعادة تعيين كلمة المرور (HTML Form)
-router.get('/reset-password/:token', (req, res) => {
-  res.send(`
-    <div style="font-family: Arial, sans-serif; text-align: center; margin-top: 50px;">
-        <h2>Reset Password</h2>
-        <form method="POST" action="/api/authentication/reset-password/${req.params.token}">
-            <input type="password" name="password" placeholder="New Password" required style="padding: 10px; margin: 5px;"/><br>
-            <input type="password" name="passwordConfirm" placeholder="Confirm Password" required style="padding: 10px; margin: 5px;"/><br>
-            <button type="submit" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; cursor: pointer;">Reset Password</button>
-        </form>
-    </div>
-  `);
-});
-
-router.post('/reset-password',protect,validatePassword, resetPassword);
+router.post('/reset-password/:token',validatePassword, resetPassword);
 
 
 
 
-//----- NORMAL USER PROFILE
+//des   complete user profile
+router.patch("/user/basic", protect,allwodTo("USER,ADMIN"),ProfileBasicValidator, updateUserProfile);
+router.patch("/user/preferences",allwodTo("USER,ADMIN"),protect,PreferencesValidator,updateUserProfile,);
 
-///----- NORMAL USER PROFILE
-
-// Page 1 – Basic Info
-router.put("/profile/basic", protect,
-      allwodTo("USER,ADMIN"),
- ...ProfileBasicValidator, updateUserProfile);
-
-// Page 2 – Preferences (Food + Usage)
-router.put(
-  "/profile/preferences",
-    allwodTo("USER,ADMIN"),
-
-  protect,
-  ...PreferencesValidator,
-  updateUserProfile,
-);
-
-//------- RESTAURANT PROFILE
-
-// Page 1 – Basic Info
-router.put(
-  "/restaurant/basic",
-  protect,
-    allwodTo("RESTAURANT,ADMIN"),
-
-  ...RestaurantBasicValidator,
-  updateRestaurantProfile,
-);
-
-// Page 2 – Location Info
-router.put(
-  "/restaurant/location",
-  protect,
-  allwodTo("RESTAURANT,ADMIN"),
-  RestaurantLocationValidator,
-  updateRestaurantProfile,
-);
-
-// Page 3 – Details
-router.put(
-  "/restaurant/details",
-  protect,
-    allwodTo("RESTAURANT,ADMIN"),
-
-  ...RestaurantDetailsValidator,
-  updateRestaurantProfile,
-);
-
-// Page 4 – Services
-router.put(
-  "/restaurant/services",
-  protect,
-    allwodTo("RESTAURANT,ADMIN"),
-
-  ...RestaurantServicesValidator,
-  updateRestaurantProfile,
-);
+//des   complete restaurant profile
+router.patch("/restaurant/basic", protect,allwodTo("RESTAURANT,ADMIN"),RestaurantBasicValidator,updateRestaurantProfile,);
+router.patch("/restaurant/location",protect,allwodTo("RESTAURANT,ADMIN"),RestaurantLocationValidator,updateRestaurantProfile,);
+router.put("/restaurant/details",protect,allwodTo("RESTAURANT,ADMIN"),RestaurantDetailsValidator,updateRestaurantProfile,);
+router.put("/restaurant/services",protect,allwodTo("RESTAURANT,ADMIN"),RestaurantServicesValidator,updateRestaurantProfile,);
 
 module.exports = router;

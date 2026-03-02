@@ -7,28 +7,40 @@ const { Op } = require("sequelize");
 
 const { User, UserProfile, RestaurantProfile } = require("../models/index");
 
-/* CREATE USER */
+//des       create a user
+//route      post /api/users/
+//access     ADMIN
 exports.createUser = asyncHandler(async (req, res) => {
-  const { role } = req.body;
+  const { userName, email, password, role } = req.body;
 
-  // Create  User only
   const user = await User.create({
-    userName: req.body.userName,
-    email: req.body.email,
-    password: req.body.password,
+    userName,
+    email,
+    password,
     role: role || "user",
   });
-      const token = await GENERATE_TOKEN({ email: user.email, id: user.id, userName: user.userName });
 
-    user.password = undefined;
+  await sendVerificationEmail(user); //
 
-    res.status(201).json({ STATUS: 'success',    "MESSAGE": "User created successfully",
- DATA: { user,token},ERRORS:[] });
+  const token = await GENERATE_TOKEN({ email: user.email, id: user.id, userName: user.userName });
+
+  user.password = undefined;
+
+  res.status(201).json({ 
+    STATUS: 'success', 
+    MESSAGE: "User created successfully. Verification email sent.",
+    DATA: { user, token },
+    ERRORS: [] 
+  });
 });
-//GET ALL USERS
+
+//des       GET ALL USERS
+//route      GET /api/users/
+//access     ADMIN
+
 exports.getAllUsers = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;       
-  const limit = parseInt(req.query.limit) || 10;      
+  const page = parseInt(req.query.page) || 1;      
+  const limit = parseInt(req.query.limit) || 10 ;      
   const offset = (page - 1) * limit;                
   const { count, rows: users } = await User.findAndCountAll({
     include: [UserProfile, RestaurantProfile],
@@ -43,9 +55,7 @@ exports.getAllUsers = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     STATUS: "success",
-        "MESSAGE": "list of users",
-
-   
+    "MESSAGE": "list of users",
     DATA:{
     results: users.length,       
     totalCount: count,            
@@ -57,15 +67,16 @@ exports.getAllUsers = asyncHandler(async (req, res) => {
       hasNextPage: page < totalPages,
       hasPrevPage: page > 1,
           users,
-
     },
     } ,
     ERRORS:[]
   });
 });
 
-// GET SINGLE USER BY ID
 
+//des       get single user by id
+//route      post /api/users/:id
+//access     ADMIN
 exports.getUser = asyncHandler(async (req, res, next) => {
   const user = await User.findByPk(req.params.id, {
     include: [UserProfile, RestaurantProfile],
@@ -76,14 +87,15 @@ exports.getUser = asyncHandler(async (req, res, next) => {
 
 res.status(200).json({ 
     STATUS: "success", 
-        "MESSAGE": "find User  successfully",
-
-    DATA: user, 
+    "MESSAGE": "find User  successfully",
+    DATA:{user}, 
     ERRORS: [] 
   });});
 
-// GET USER BY IDENTIFIER (email or username)
 
+//des       GET USER BY IDENTIFIER (email or username)//req.query (params)
+//route      get /api/users/
+//access     ADMIN
 exports.getUserByIdentifier = asyncHandler(async (req, res, next) => {
   const { identifier } = req.query;
 
@@ -100,13 +112,15 @@ exports.getUserByIdentifier = asyncHandler(async (req, res, next) => {
 
 res.status(200).json({ 
     STATUS: "success", 
-            "MESSAGE": "find User  successfully",
-
-    DATA: user, 
+    "MESSAGE": "find User  successfully",
+    DATA:{user}, 
     ERRORS: [] 
   })});
 
-//UPDATE USER
+
+//des      UPDATE USER BY id 
+//route      put /api/users/:id
+//access     ADMIN
 exports.updateUserMain = asyncHandler(async (req, res, next) => {
   const user = await User.findByPk(req.params.id);
 
@@ -123,13 +137,34 @@ exports.updateUserMain = asyncHandler(async (req, res, next) => {
 
 res.status(200).json({ 
     STATUS: "success", 
-            "MESSAGE": "update User  successfully",
+   "MESSAGE": "update User  successfully",
 
-    DATA: user, 
+    DATA: {user}, 
     ERRORS: [] 
   })});
 
-//CHANGE PASSWORD
+
+  //des     DELETE USER BY id 
+//route      put /api/users/:id
+//access     ADMIN
+exports.deleteUser = asyncHandler(async (req, res, next) => {
+  const deleted = await User.destroy({
+    where: { id: req.params.id },
+  });
+
+  if (!deleted)
+    return next(new ApiError(`No user found for id ${req.params.id}`, 404));
+
+  res
+    .status(200)
+    .json({ STATUS: "success", MESSAGE: "User deleted successfully",DATA:{} });
+});
+
+
+
+  //des    CHANGE PASSWORD USER BY id 
+//route      put /api/users/:id
+//access     ADMIN
 
 exports.changeUserPassword = asyncHandler(async (req, res, next) => {
   const user = await User.findByPk(req.params.id);
@@ -150,23 +185,9 @@ exports.changeUserPassword = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({ 
     STATUS: "success", 
-            "MESSAGE": "change password  successfully",
-
-    DATA: user, 
+   "MESSAGE": "change password  successfully",
+    DATA: {user}, 
     ERRORS: [] 
   })
 });
 
-// DELETE USER
-exports.deleteUser = asyncHandler(async (req, res, next) => {
-  const deleted = await User.destroy({
-    where: { id: req.params.id },
-  });
-
-  if (!deleted)
-    return next(new ApiError(`No user found for id ${req.params.id}`, 404));
-
-  res
-    .status(200)
-    .json({ STATUS: "success", MESSAGE: "User deleted successfully",DATA:{} });
-});

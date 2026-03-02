@@ -7,6 +7,7 @@ const validatorMiddleware = (req, res, next) => {
 
     return res.status(400).json({
       STATUS: 'fail',
+      
        DATA: {},
       ERRORS: extractedErrors, 
      

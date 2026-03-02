@@ -4,9 +4,9 @@ const sendErrorForDev = (err, res) => {
   res.status(err.statusCode).json({
     STATUS: err.status,
     MESSAGE:err.message,
-        DATA: {},        
-
+    DATA: {},        
     ERRORS: [err.message], 
+    
   });
 };
 
@@ -15,10 +15,8 @@ const sendErrorForProd = (err, res) => {
   if (err.isOperational) {
     return res.status(err.statusCode).json({
     STATUS: err.status,
-        MESSAGE:err.message,
-
-        DATA: {}   ,
-
+    MESSAGE:err.message,
+    DATA: {}   ,
     ERRORS: [err.message], 
     });
   }
@@ -36,7 +34,7 @@ const globalError = (err, req, res, next) => {
     sendErrorForDev(err, res);
   } else {
   if (err.name==='jsonWebTokenError') err=handle();
-    if (err.name==='TokenExpiredError') err=handle()
+  if (err.name==='TokenExpiredError') err=handle()
 
     sendErrorForProd(err, res);
   }
