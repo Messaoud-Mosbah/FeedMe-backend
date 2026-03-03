@@ -46,7 +46,7 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log("✅ Database connection established successfully (Safe Mode).");
 
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0',() => {
       console.log(`🚀 Server started at port ${PORT}`);
     });
   } catch (err) {

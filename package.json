@@ -3,13 +3,11 @@
   "version": "1.0.0",
   "description": "Backend for DZ Community Food project",
   "main": "server.js",
-  "scripts": {
-    "note0": "cross env ضرورية لتنفيد امر تعديل NODE_ENV في وينداوز",
-    "start:prod": "cross-env NODE_ENV=production node server.js",
-    "start:dev": "nodemon server.js",
-    "note": " تستعمل اثناء التطوير لتشغيل السيرفر واختصار الكتابة",
-    "note2": " node run dev for running in terminal"
-  },
+ "scripts": {
+  "start": "node server.js",
+  "start:prod": "cross-env NODE_ENV=production node server.js",
+  "start:dev": "nodemon server.js"
+},
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.6",
