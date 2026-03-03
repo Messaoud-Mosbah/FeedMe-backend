@@ -12,7 +12,11 @@ module.exports = {
       ssl: {
         require: true,
         rejectUnauthorized: false
-      }
+      },
+       dialectOptions: {
+      // قد تحتاج لهذا الخيار لتحسين استقرار الاتصال
+      connectTimeout: 60000 // مهلة اتصال أطول (60 ثانية)
+    }
     }
   },
   production: {
