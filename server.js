@@ -1,10 +1,13 @@
-const dotenv = require("dotenv");
+const path = require('path');
+const dotenv = require('dotenv');
+
+// التعديل هنا: حاول قراءة الملف وإذا لم يجده (مثلما في Render) سيعتمد على متغيرات البيئة تلقائياً
+dotenv.config({ path: path.join(__dirname, 'config.env') });
 const express = require("express");
 const cors = require("cors");
 const path = require('path');
 const morgan = require("morgan");
 
-dotenv.config({ path: "config.env" });
 
 const { sequelize } = require("./config/database"); 
 const ApiError = require("./utils/apiError");
