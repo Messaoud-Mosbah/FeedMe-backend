@@ -10,15 +10,11 @@ const UserProfile = sequelize.define("UserProfile", {
     type: DataTypes.STRING(100),
     allowNull: false,
   },
-  profilePicture: {
-    type: DataTypes.STRING(255),
-    defaultValue: "default.png",
-  },
   city: {
     type: DataTypes.STRING(100),
     allowNull: true,
   },
-  phone: {
+   phoneNumber: {
     type: DataTypes.STRING(20), 
     allowNull: true,
   },
@@ -26,11 +22,16 @@ const UserProfile = sequelize.define("UserProfile", {
     type: DataTypes.TEXT,
     allowNull: true,
   },
-  usagePreferences: {
+  
+  profilePicture: {
+    type: DataTypes.STRING(255),
+    defaultValue: "default.png",
+  },
+  usageGoal:{
     type: DataTypes.JSON, 
     allowNull: true,
-  },
-  kitchenCategories: {
+     },
+  kitchenCategory: {
     type: DataTypes.JSON, 
     allowNull: true,
   },

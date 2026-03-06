@@ -1,4 +1,4 @@
-require('dotenv').config({ path: './config.env' }); // للتأكد من قراءة ملف الإعدادات محلياً
+require('dotenv').config({ path: './config.env' });
 
 module.exports = {
   development: {
@@ -6,31 +6,28 @@ module.exports = {
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
+    port: process.env.DB_PORT || 3306,
+    dialect: "mysql",
+    dialectOptions: {
+      connectTimeout: 60000,
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    }
+  },
+  production: {
+    username: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT || 3306,
     dialect: "mysql",
     dialectOptions: {
       ssl: {
         require: true,
         rejectUnauthorized: false
-      },
-       dialectOptions: {
-      // قد تحتاج لهذا الخيار لتحسين استقرار الاتصال
-      connectTimeout: 60000 // مهلة اتصال أطول (60 ثانية)
-    }
-    }
-  },
-  production: {
-    username: process.env.DB_USER, // سيأخذ القيمة من إعدادات Render يدوياً
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    dialect: "mysql",
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false // ضروري جداً للاتصال بـ Aiven من Render
       }
     }
   }
-};
+}

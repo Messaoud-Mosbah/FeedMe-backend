@@ -21,13 +21,20 @@ module.exports = {
         type: Sequelize.STRING(20), 
         allowNull: false,
       },
-      profilePicture: {
+      restaurantLogoUrl: {
         type: Sequelize.STRING,
         defaultValue: "restaurant-default.png",
       },
-      city: { type: Sequelize.STRING(50) },
-      wilaya: { type: Sequelize.STRING(50) },
-      street: { type: Sequelize.STRING(50), allowNull: true },
+      city: { 
+        type: Sequelize.STRING(50) 
+      },
+      wilaya: { 
+        type: Sequelize.STRING(50) 
+      },
+      street: { 
+        type: Sequelize.STRING(50), 
+        allowNull: true 
+      },
       postalCode: {
         type: Sequelize.STRING(10), 
         allowNull: true,
@@ -37,23 +44,28 @@ module.exports = {
         allowNull: true,
       },
       kitchenCategories: {
-        type: Sequelize.JSON, // ملاحظة: الـ Validation يتم في الموديل وليس هنا
+        type: Sequelize.JSON, 
       },
-      openingHoursFrom: { type: Sequelize.TIME },
-      openingHoursTo: { type: Sequelize.TIME },
+      openingHoursFrom: { 
+        type: Sequelize.TIME 
+      },
+      openingHoursTo: { 
+        type: Sequelize.TIME 
+      },
       daysOpen: {
         type: Sequelize.JSON,
       },
       services: {
         type: Sequelize.JSON,
-        defaultValue: { dineIn: false, takeaway: false, delivery: false, reservation: false },
+       
+        defaultValue: JSON.stringify({ dineIn: false, takeaway: false, delivery: false, reservation: false }),
       },
       userId: {
         type: Sequelize.UUID,
-        unique: true, // علاقة One-to-One مع المستخدم
+        unique: true, 
         allowNull: false,
         references: {
-          model: 'users', // اسم الجدول الأب
+          model: 'users', 
           key: 'id',
         },
         onUpdate: 'CASCADE',

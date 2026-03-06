@@ -12,6 +12,7 @@ const User = sequelize.define(
       defaultValue: DataTypes.UUIDV4, 
       primaryKey: true,
     },
+    ////////////////////
     userName: {
       type: Sequelize.STRING(100), 
       unique: true,
@@ -19,9 +20,6 @@ const User = sequelize.define(
         len: [3, 30],
         is: /^[a-zA-Z0-9_-]+$/,
       },
-    },
-    slug: {
-      type: DataTypes.STRING,
     },
     email: {
       type: DataTypes.STRING(50),
@@ -34,6 +32,26 @@ const User = sequelize.define(
         isEmail: true,
       },
     },
+    role: {
+      type: DataTypes.ENUM("USER", "RESTAURANT", "ADMIN"),
+      defaultValue: "USER",
+    },
+    ///////////////////////
+    status:{
+      type: DataTypes.ENUM("ACTIVE", "SUSPENDED"),
+      defaultValue: "ACTIVE",
+    },
+   //////////////////
+   isVerified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+     isOnboardingCompleted: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    /////////////////
+    
     password: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -41,15 +59,8 @@ const User = sequelize.define(
     passwordChangedAt: {
       type: DataTypes.DATE,
     },
-    role: {
-      type: DataTypes.ENUM("USER", "RESTAURANT", "ADMIN"),
-      defaultValue: "USER",
-    },
-    active: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true,
-    },
-    passwordResetToken: {
+    ////////////////
+    passwordResetTokenHash: {
       type: DataTypes.STRING,
       allowNull: true,
     },
@@ -57,14 +68,23 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
-    verificationToken: {
+    verificationTokenHash: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-    isVerified: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
+    verificationTokenExpires:{
+       type: DataTypes.DATE,
+      allowNull: true,
     },
+    isLoggedOut:{
+       type: DataTypes.BOOLEAN,
+      defaultValue: false,  
+    },
+    //////
+    slug: {
+      type: DataTypes.STRING,
+    },
+    
     // ---------------------------------------
   },
   {

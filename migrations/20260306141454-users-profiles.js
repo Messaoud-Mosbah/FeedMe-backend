@@ -13,15 +13,11 @@ module.exports = {
         type: Sequelize.STRING(100),
         allowNull: false,
       },
-      profilePicture: {
-        type: Sequelize.STRING(255),
-        defaultValue: "default.png",
-      },
       city: {
         type: Sequelize.STRING(100),
         allowNull: true,
       },
-      phone: {
+      phoneNumber: {
         type: Sequelize.STRING(20), 
         allowNull: true,
       },
@@ -29,20 +25,24 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: true,
       },
-      usagePreferences: {
-        type: Sequelize.JSON, 
-        allowNull: true,
+      profilePicture: {
+        type: Sequelize.STRING(255),
+        defaultValue: "default.png",
       },
-      kitchenCategories: {
-        type: Sequelize.JSON, 
-        allowNull: true,
-      },
+     usageGoal:{
+          type: Sequelize.JSON, 
+          allowNull: true,
+           },
+        kitchenCategory: {
+          type: Sequelize.JSON, 
+          allowNull: true,
+        },
       userId: {
         type: Sequelize.UUID, 
-        unique: true, // علاقة One-to-One
+        unique: true,
         allowNull: false,
         references: {
-          model: 'users', // اسم الجدول الأب
+          model: 'users',
           key: 'id',
         },
         onUpdate: 'CASCADE',

@@ -5,8 +5,7 @@ const {
   getAllUsers,
   getUser,
   getUserByIdentifier,
-  updateUserMain,
-
+  updateUser,
   deleteUser,
   changeUserPassword,
 } = require("../services/userService");
@@ -14,31 +13,26 @@ const {
 const {
   createUserValidator,
   updateUserValidator,
-  getUserValidator,
   deleteUserValidator,
   getUserByIdentifierValidator,
   changeUserPasswordValidator,
-
+  getUserValidator
 } = require("../utils/validators/userValidator");
 
 const router = express.Router();
 
-
-router.post("/", ...createUserValidator, createUser);
+router.post("/", createUserValidator, createUser);
 
 router.get("/", getAllUsers);
 
-router.get("/get-user", ...getUserByIdentifierValidator, getUserByIdentifier);
+router.get("/get-user-by-identifier", ...getUserByIdentifierValidator, getUserByIdentifier);
 
-router.get("/:id", ...getUserValidator, getUser);
+router.get("/:id",getUserValidator, getUser);
 
-router.patch("/:id", ...updateUserValidator, updateUserMain);
+router.patch("/:id", ...updateUserValidator, updateUser);
 
-router.patch( "/change-user-password/:id",  changeUserPasswordValidator,changeUserPassword,
-);
+router.patch( "/:id",  changeUserPasswordValidator,changeUserPassword,);
+
 router.delete("/:id",deleteUserValidator,deleteUser);
-
-
-
 
 module.exports = router;

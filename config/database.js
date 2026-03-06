@@ -1,7 +1,7 @@
 
 const { Sequelize } = require('sequelize');
 const env = process.env.NODE_ENV || 'development';
-const config = require('./config.js')[env]; // تأكد من صحة المسار للملف أعلاه
+const config = require('./config.js')[env]; 
 
 const sequelize = new Sequelize(
   config.database,

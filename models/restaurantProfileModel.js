@@ -23,10 +23,11 @@ const RestaurantProfile = sequelize.define("RestaurantProfile", {
     type: DataTypes.STRING(20), 
     allowNull: false,
   },
-  profilePicture: {
+  restaurantLogoUrl: {
     type: DataTypes.STRING,
     defaultValue: "restaurant-default.png",
   },
+  ////////////////
   city: { type: DataTypes.STRING(50) },
   wilaya: { type: DataTypes.STRING(50) },
   street: { type: DataTypes.STRING(50), allowNull: true },

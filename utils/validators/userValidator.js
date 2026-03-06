@@ -1,4 +1,4 @@
-const { check, param } = require("express-validator");
+const { check, param ,  query} = require("express-validator");
 const User = require("../../models/userModel");
 const validatorMiddleware = require("../../middlewares/validatorMiddleware");
 
@@ -56,6 +56,36 @@ exports.createUserValidator = [
   validatorMiddleware,
 ];
 
+
+// GET
+exports.getUserValidator = [
+  param("id").isUUID(4).withMessage("Invalid user ID format"),
+  validatorMiddleware,
+];
+
+// get USER by identifier
+exports.getUserByIdentifierValidator = [
+ query("identifier")
+  .trim()
+  .notEmpty()
+  .withMessage("Username or Email is required")
+  .custom((value) => {
+    const isEmail = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(value);
+    
+    const isUsername = /^[a-zA-Z0-9_-]+$/.test(value) && value.length >= 3 && value.length <= 30;
+
+    if (!isEmail && !isUsername) {
+      throw new Error("Please enter a valid Email or a Username (3-30 chars, no special symbols)");
+    }
+    return true;
+  }),
+  validatorMiddleware,
+]; 
+// DELETE a user
+exports.deleteUserValidator = [
+  param("id").isUUID(4).withMessage("Invalid user ID format"),
+  validatorMiddleware,
+];
 // UPDATE USER VALIDATOR
 
 exports.updateUserValidator = [
@@ -117,32 +147,4 @@ exports.changeUserPasswordValidator = [
   validatorMiddleware,
 ];
 
-// GET
-exports.getUserValidator = [
-  param("id").isUUID(4).withMessage("Invalid user ID format"),
-  validatorMiddleware,
-];
-// DELETE
-exports.deleteUserValidator = [
-  param("id").isUUID(4).withMessage("Invalid user ID format"),
-  validatorMiddleware,
-];
-// get USER
-exports.getUserByIdentifierValidator = [
- check("identifier")
-  .trim()
-  .notEmpty()
-  .withMessage("Username or Email is required")
-  .custom((value) => {
-    const isEmail = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(value);
-    
-    const isUsername = /^[a-zA-Z0-9_-]+$/.test(value) && value.length >= 3 && value.length <= 30;
-
-    if (!isEmail && !isUsername) {
-      throw new Error("Please enter a valid Email or a Username (3-30 chars, no special symbols)");
-    }
-    return true;
-  }),
-  validatorMiddleware,
-];
 

@@ -12,7 +12,7 @@ module.exports = {
       userName: {
         type: Sequelize.STRING(100),
         unique: true,
-        allowNull: false
+        allowNull: true 
       },
       slug: {
         type: Sequelize.STRING
@@ -22,6 +22,10 @@ module.exports = {
         allowNull: false,
         unique: true
       },
+       isLoggedOut:{
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
+          },
       password: {
         type: Sequelize.STRING,
         allowNull: false
@@ -33,11 +37,11 @@ module.exports = {
         type: Sequelize.ENUM("USER", "RESTAURANT", "ADMIN"),
         defaultValue: "USER"
       },
-      active: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: true
+      status: {
+        type: Sequelize.ENUM("ACTIVE", "SUSPENDED"),
+        defaultValue: "ACTIVE"
       },
-      passwordResetToken: {
+      passwordResetTokenHash: {
         type: Sequelize.STRING,
         allowNull: true
       },
@@ -45,11 +49,19 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: true
       },
-      verificationToken: {
+      verificationTokenHash: {
         type: Sequelize.STRING,
         allowNull: true
       },
+      verificationTokenExpires:{
+             type: Sequelize.DATE,
+            allowNull: true,
+          },
       isVerified: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
+      },
+      isOnboardingCompleted: {
         type: Sequelize.BOOLEAN,
         defaultValue: false
       },

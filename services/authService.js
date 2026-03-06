@@ -19,80 +19,176 @@ const signup = asyncHandler(async (req, res) => {
         password,
     });
     await sendVerificationEmail(user);
-    const token = await GENERATE_TOKEN({ email: user.email, id: user.id, userName: user.userName });
     user.password = undefined;
-    res.status(201).json({ STATUS: 'success',
-        MESSAGE: "sign up successfully",
-         DATA: { user,token},
-         ERRORS:[] 
+    res.status(201).json({ status: 'SUCCESS',
+        message: "sign up successfully",
+         data: { user},
+         errors:null
         });
 });
 //des        Verification E-mail sent automatically
 
 const sendVerificationEmail = async (user) => {
-    const verificationToken = crypto.randomBytes(32).toString("hex");
-    const hashedToken = crypto.createHash("sha256").update(verificationToken).digest("hex");
-    user.verificationToken = hashedToken;
-    await user.save();
-    const verificationURL = `${process.env.NGROK_URL}/api/authentication/verify-email/${verificationToken}`;
+    const verificationTokenHash = crypto.randomBytes(32).toString("hex");
+
+    const hashedToken = crypto.createHash("sha256")
+        .update(verificationTokenHash)
+        .digest("hex");
+    
+    user.verificationTokenHash = hashedToken;
+    user.verificationTokenExpires = new Date(Date.now() + 10 * 60 * 1000); 
+
+    await user.save({ fields: ['verificationTokenHash', 'verificationTokenExpires'] });
+
+    const verificationURL = `${process.env.NGROK_URL}/api/authentication/verify-email-token/${verificationTokenHash}`;
+
+   const htmlContent = `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; color: #333333;">
+        <div style="background-color: #1a1a1a; padding: 30px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 24px;">DZ Community Food</h1>
+        </div>
+
+        <div style="padding: 40px 30px;">
+            <h2 style="color: #2d3436; margin-top: 0;">Welcome, ${user.userName}!</h2>
+            <p style="font-size: 16px; line-height: 1.6; color: #636e72;">
+                Thank you for joining our community. To get started, please verify your email address.
+            </p>
+            
+            <div style="background-color: #fff5f5; border-left: 4px solid #ff7675; padding: 15px; margin: 25px 0;">
+                <p style="margin: 0; color: #d63031; font-weight: bold; font-size: 14px;">
+                    ⚠️ Important: This link will expire in 10 minutes.
+                </p>
+            </div>
+
+            <div style="text-align: center; margin: 35px 0;">
+                <a href="${verificationURL}" 
+                   style="background-color: #2ecc71; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px; display: inline-block; transition: background-color 0.3s ease;">
+                   Verify Email Address
+                </a>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+
+            <p style="font-size: 13px; color: #b2bec3; line-height: 1.5;">
+                If the button above doesn't work, please copy and paste the following URL into your browser:
+            </p>
+            <p style="font-size: 12px; color: #0984e3; word-break: break-all; background: #f9f9f9; padding: 10px; border-radius: 5px;">
+                ${verificationURL}
+            </p>
+        </div>
+
+        <div style="background-color: #f1f2f6; padding: 20px; text-align: center; font-size: 12px; color: #95a5a6;">
+            <p style="margin: 0;">&copy; 2026 DZ Community Food. All rights reserved.</p>
+            <p style="margin: 5px 0 0;">If you didn't create an account, you can safely ignore this email.</p>
+        </div>
+    </div>
+`;
+
     await sendEmail({
         email: user.email,
-        subject: "Verify your email",
-        message: `Please verify your email by clicking here: ${verificationURL}`,
+        subject: "Email Verification (10 min expiration)",
+        html: htmlContent 
     });
 };
-// @desc    Verify Email work automatically 
+//des        Verify Email
+//route      post /api/verify-email-token/:token
+//access     public
 const verifyEmail = asyncHandler(async (req, res, next) => {
-    const hashedToken = crypto.createHash("sha256").update(req.params.token).digest("hex");
+    const hashedToken = crypto.createHash("sha256")
+        .update(req.params.token)
+        .digest("hex");
+
     const user = await User.findOne({
-        where: { verificationToken: hashedToken },
+        where: { 
+            verificationTokenHash: hashedToken,
+            verificationTokenExpires: {
+                [Op.gt]: new Date() 
+            }
+        },
+   
     });
-    if (!user) {
-        return next(new ApiError("Token is invalid", 400));
+if (!user) {
+        return next(new ApiError("Token is invalid or has expired. Please sign up again.", 400));
     }
     user.isVerified = true;
-    user.verificationToken = null;
+    user.verificationTokenHash = null;
+    user.verificationTokenExpires = null;
     await user.save();
-    res.status(200).json({ STATUS: "success", MESSAGE: "Email verified successfully" ,DATA:{},ERRORS:[]});
+
+    const jwtToken = await GENERATE_TOKEN({ 
+        email: user.email, 
+        id: user.id, 
+        userName: user.userName 
+    });
+user.password=undefined;
+    res.status(200).json({ 
+        status: "SUCCESS", 
+        message: "Email verified successfully. Welcome aboard!", 
+        data: { user, jwtToken }, 
+        errors: null 
+    });
+});
+// @desc    Resend Verification E-mail (Manual request)
+// @route   POST /api/authentication/send-verification-email
+// @access  Public
+const send_verification_email = asyncHandler(async (req, res, next) => {
+    const { email } = req.query;
+    if (!email) {
+        return next(new ApiError("Email is required in request body", 400));
+    }
+        const user = await User.findOne({ where: { email } });
+    if (!user) {
+        return next(new ApiError("This email is not registered with us", 404));
+    }
+    if (user.isVerified) {
+        return res.status(400).json({
+            STATUS: "FAIL",
+            MESSAGE: "This account is already verified",
+        });
+    }
+    await sendVerificationEmail(user);
+
+    res.status(200).json({
+        STATUS: "success",
+        MESSAGE: "Verification email sent successfully",
+        DATA:null,
+        ERRORS: null
+    });
 });
 
-//des         Update User Role
-//route      post /api/authentication/signup/role(we need token)
+
+
+
+//des         sign in
+//route      post /api/authentication/sign-in
 //access     public
-const updateUserRole = asyncHandler(async (req, res, next) => {
-    const user = await User.findByPk(req.user.id);
-    if (!user) return next(new ApiError("User not found", 404));
-    user.role = req.body.role; 
-    await user.save();
-    user.password = undefined;
-    res.status(200).json({ STATUS: 'success',
-    MESSAGE: "update user role successfully",
-   DATA:{user}
-   ,ERRORS:[] 
-});
-});
+const signin = asyncHandler(async (req, res, next) => {
+      const { identifier, password } = req.body;
 
-
-//des         Login
-//route      post /api/authentication/login
-//access     public
-const login = asyncHandler(async (req, res, next) => {
-    const { identity, password } = req.body;
-
-    if (!identity || !password) {
+    if (!identifier || !password) {
         return next(new ApiError("Email/Username and password are required", 400));
     }
 
     const user = await User.findOne({
         where: {
-            [Op.or]: [{ email: identity }, { userName: identity }]
+            [Op.or]: [{ email: identifier }, { userName: identifier }]
         }
     });
-
     if (!user || !(await bcrypt.compare(password, user.password))) {
         return next(new ApiError("Invalid email/username or password", 401));
-    }
-
+     }
+    if(!user.isVerified){
+     return res.status(403).json({
+        status: "SUCCESS",
+        message: " you must verified your acount....",
+        data: { user },
+        errors:null
+    });    }
+    if(user.status==="SUSPENDED"){
+                return next(new ApiError("you are syspended by the admin", 403));
+}
+     user.isLoggedOut=false;
+await user.save({ fields: ['isLoggedOut'] }); 
     const token = GENERATE_TOKEN({
         id: user.id,
         email: user.email,
@@ -101,72 +197,141 @@ const login = asyncHandler(async (req, res, next) => {
 
     user.password = undefined;
     res.status(200).json({
-        STATUS: "success",
-        MESSAGE: "log in successfully",
-        DATA: { user,token },
-        ERRORS:[]
+        status: "SUCCESS",
+        message: " you sign  in successfully,welcome...",
+        data: { user,token },
+        errors:null
     });
 });
 
-//des        Forgot Password(give me the e-mail)
-//route      post /api/authentication/forgot-password
-//access     public
-const forgotPassword = asyncHandler(async (req, res, next) => {
-    const { email } = req.body;
-    const user = await User.findOne({ where: { email } });
+
+// @desc    Logout User
+// @route   POST /api/authentication/log-out
+// @access  Protected (Requires Token)
+const logout = asyncHandler(async (req, res, next) => {
+    const user = await User.findByPk(req.user.id);
     if (!user) {
-        return next(new ApiError("if the email found we will sent an E-mail for you", 404));
+        return next(new ApiError("User not found", 404));
     }
-    const resetToken = crypto.randomBytes(32).toString("hex");
-    user.passwordResetToken = crypto.createHash("sha256").update(resetToken).digest("hex");
-    user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 دقائق
-    await user.save();
-    const resetURL = `${process.env.NGROK_URL}/api/authentication/reset-password/${resetToken}`;
-    try{ await sendEmail({
-        email: user.email,
-        subject: "Password Reset",
-        message: `Hi ${user.userName} \n  Forgot your password? Click here to reset:\n ${resetURL}`,
+   user.isLoggedOut = true;
+    await user.save({ fields: ['isLoggedOut'] });
+
+    res.status(200).json({
+        status: "SUCCESS",
+        message: "Logged out successfully. See you soon!",
+        data: null ,
+        err:null
     });
-   }catch(err){
-    user.passwordResetToken=undefined;
-        user.passwordResetExpires=undefined;
-        await user.save();
-        return next(new ApiError('There is an error in sending the email', 500));
-}
-  res.status(200).json({ STATUS: "success",
-         Message: "Token sent to email!",
-        DATA: {  },
-        ERRORS:[],
-        });
-}); 
-   
-//des       Reset Password(verify token and set the new password)
-//route      post /api/authentication/reset-password/:token
-//access     public
-const resetPassword = asyncHandler(async (req, res, next) => {
-    const { password, passwordConfirm } = req.body;
-    if (!password || !passwordConfirm) {
-        return next(new ApiError("Password and confirm password are required", 400));
+});
+/// @desc    Forgot Password - Send reset link to email
+// @route   POST /api/authentication/forget-password
+// @access  Public
+const forgetPassword = asyncHandler(async (req, res, next) => {
+    const { identifier } = req.body;
+
+    // 1. Check if identifier exists
+    if (!identifier) {
+        return next(new ApiError("Email or Username is required", 400));
     }
-    if (password !== passwordConfirm) {
-        return next(new ApiError("Passwords do not match", 400));
-    }
-    const resetTokenHash = crypto.createHash("sha256").update(req.params.token).digest("hex");
+
+    // 2. Find user in MySQL
     const user = await User.findOne({
         where: {
-            passwordResetToken: resetTokenHash,
-            passwordResetExpires: { [Op.gt]: new Date() },
-        },
+            [Op.or]: [{ email: identifier }, { userName: identifier }]
+        }
     });
-   if (!user) {
-        return next(new ApiError("Token is invalid or expired", 400));
+
+    if (!user) {
+        return next(new ApiError("No account found with this email/username", 404));
     }
-    user.password = password;
-    user.passwordResetToken = null;
-    user.passwordResetExpires = null;
-    await user.save();
-    res.status(201).json({ STATUS: "success", MESSAGE: "Password reset successfully" ,DATA:{},ERRORS:[]});
+
+    // 3. Generate a random reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    // 4. Hash the token for database storage
+    const hashedToken = crypto.createHash("sha256")
+        .update(resetToken)
+        .digest("hex");
+
+    // 5. Save hashed token and expiry time (10 minutes)
+    user.passwordResetTokenHash = hashedToken;
+    user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); 
+
+    await user.save({ fields: ['passwordResetTokenHash', 'passwordResetExpires'] });
+
+    // 6. Build the reset URL
+    const resetURL = `${process.env.NGROK_URL}/api/authentication/reset-password/${resetToken}`;
+
+    // 7. HTML Email Template
+    const htmlContent = `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; color: #333333;">
+            <div style="background-color: #1a1a1a; padding: 30px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px;">DZ Community Food</h1>
+            </div>
+
+            <div style="padding: 40px 30px;">
+                <h2 style="color: #2d3436; margin-top: 0;">Password Reset Request</h2>
+                <p style="font-size: 16px; line-height: 1.6; color: #636e72;">
+                    Hi ${user.userName},<br>
+                    We received a request to reset your password. You can do this by clicking the button below:
+                </p>
+                
+                <div style="background-color: #fff5f5; border-left: 4px solid #ff7675; padding: 15px; margin: 25px 0;">
+                    <p style="margin: 0; color: #d63031; font-weight: bold; font-size: 14px;">
+                        ⚠️ This link is valid for 10 minutes only.
+                    </p>
+                </div>
+
+                <div style="text-align: center; margin: 35px 0;">
+                    <a href="${resetURL}" 
+                       style="background-color: #0984e3; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                       Reset Password
+                    </a>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+
+                <p style="font-size: 13px; color: #b2bec3;">
+                    If the button doesn't work, copy and paste this link:
+                </p>
+                <p style="font-size: 12px; color: #0984e3; word-break: break-all; background: #f9f9f9; padding: 10px; border-radius: 5px;">
+                    ${resetURL}
+                </p>
+            </div>
+
+            <div style="background-color: #f1f2f6; padding: 20px; text-align: center; font-size: 12px; color: #95a5a6;">
+                <p style="margin: 0;">&copy; 2026 DZ Community Food. All rights reserved.</p>
+            </div>
+        </div>
+    `;
+
+    // 8. Send the email
+    try {
+        await sendEmail({
+            email: user.email,
+            subject: "Password Reset Request (10 min expiration)",
+            html: htmlContent 
+        });
+
+        res.status(200).json({ 
+            status: "SUCCESS", 
+            message: "Password reset link sent to your email.",
+            data: null,
+            errors: null 
+        });
+
+    } catch (err) {
+        // Cleanup on failure
+        user.passwordResetTokenHash = null;
+        user.passwordResetExpires = null;
+        await user.save({ fields: ['passwordResetTokenHash', 'passwordResetExpires'] });
+        
+        return next(new ApiError("Failed to send email. Please try again later.", 500));
+    }
 });
+
+
+
 
 
 // @desc    Protect Middleware to verify if the user logged
@@ -277,14 +442,16 @@ if (req.user.role !== "RESTAURANT") {
 });
 module.exports = { 
     signup, 
-    login, 
-    updateUserRole, 
+    signin, 
+    send_verification_email,
     protect, 
-    forgotPassword, 
-    resetPassword, 
+    forgetPassword, 
     verifyEmail, 
     sendVerificationEmail ,
     updateUserProfile,
     updateRestaurantProfile,
-    allwodTo
+    allwodTo,
+    logout,
+    
+    
 };
