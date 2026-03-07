@@ -38,14 +38,16 @@ exports.getAllUsers = asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit) || 10 ;      
   const offset = (page - 1) * limit;                
   const { count, rows: users } = await User.findAndCountAll({
-    include: [UserProfile, RestaurantProfile],
+  attributes: { exclude: ['password'] }, 
+  include: [UserProfile, RestaurantProfile],
     limit: limit,
     offset: offset,
     distinct: true, 
   });
   const totalPages = Math.ceil(count / limit);
   const remainingPages = totalPages - page;
-    users.password = undefined;
+    User.password = undefined;
+
   res.status(200).json({
     status: "SUCCESS",
     message: "list of users",

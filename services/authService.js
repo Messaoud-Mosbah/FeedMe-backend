@@ -9,7 +9,7 @@ const { sendEmail } = require('../utils/sendEmail');
 const jwt = require("jsonwebtoken"); 
 
 //des        Signup
-//route      post /api/authentication/signup
+//route      post /api/signup
 //access     public
 const signup = asyncHandler(async (req, res) => {
     const { userName, email, password} = req.body;
@@ -20,17 +20,17 @@ const signup = asyncHandler(async (req, res) => {
     });
     await sendVerificationEmail(user);
     user.password = undefined;
-    res.status(201).json({ status: 'SUCCESS',
+    res.status(201).json({
+         status: 'SUCCESS',
         message: "sign up successfully",
          data: { user},
          errors:null
         });
 });
-//des        Verification E-mail sent automatically
 
+//des        Verification E-mail sent automatically
 const sendVerificationEmail = async (user) => {
     const verificationTokenHash = crypto.randomBytes(32).toString("hex");
-
     const hashedToken = crypto.createHash("sha256")
         .update(verificationTokenHash)
         .digest("hex");
@@ -40,7 +40,7 @@ const sendVerificationEmail = async (user) => {
 
     await user.save({ fields: ['verificationTokenHash', 'verificationTokenExpires'] });
 
-    const verificationURL = `${process.env.NGROK_URL}/api/authentication/verify-email-token/${verificationTokenHash}`;
+    const verificationURL = `${process.env.NGROK_URL}/api/verify-email-token/${verificationTokenHash}`;
 
    const htmlContent = `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; color: #333333;">
@@ -90,6 +90,7 @@ const sendVerificationEmail = async (user) => {
         html: htmlContent 
     });
 };
+
 //des        Verify Email
 //route      post /api/verify-email-token/:token
 //access     public
@@ -128,10 +129,11 @@ user.password=undefined;
         errors: null 
     });
 });
+
 // @desc    Resend Verification E-mail (Manual request)
-// @route   POST /api/authentication/send-verification-email
+// @route   POST /api/resend-verification-email
 // @access  Public
-const send_verification_email = asyncHandler(async (req, res, next) => {
+const resend_verification_email = asyncHandler(async (req, res, next) => {
     const { email } = req.query;
     if (!email) {
         return next(new ApiError("Email is required in request body", 400));
@@ -160,7 +162,7 @@ const send_verification_email = asyncHandler(async (req, res, next) => {
 
 
 //des         sign in
-//route      post /api/authentication/sign-in
+//route      post /api/sign-in
 //access     public
 const signin = asyncHandler(async (req, res, next) => {
       const { identifier, password } = req.body;
@@ -199,14 +201,14 @@ await user.save({ fields: ['isLoggedOut'] });
     res.status(200).json({
         status: "SUCCESS",
         message: " you sign  in successfully,welcome...",
-        data: { user,token },
+        data: { user,jwtToken:token },
         errors:null
     });
 });
 
 
 // @desc    Logout User
-// @route   POST /api/authentication/log-out
+// @route   POST /api/sign-out
 // @access  Protected (Requires Token)
 const logout = asyncHandler(async (req, res, next) => {
     const user = await User.findByPk(req.user.id);
@@ -220,76 +222,63 @@ const logout = asyncHandler(async (req, res, next) => {
         status: "SUCCESS",
         message: "Logged out successfully. See you soon!",
         data: null ,
-        err:null
+        errors:null
     });
 });
 /// @desc    Forgot Password - Send reset link to email
-// @route   POST /api/authentication/forget-password
+// @route   POST /api/forget-password
 // @access  Public
 const forgetPassword = asyncHandler(async (req, res, next) => {
     const { identifier } = req.body;
-
     // 1. Check if identifier exists
     if (!identifier) {
         return next(new ApiError("Email or Username is required", 400));
     }
-
-    // 2. Find user in MySQL
+// 2. Find user in MySQL
     const user = await User.findOne({
         where: {
             [Op.or]: [{ email: identifier }, { userName: identifier }]
         }
     });
-
     if (!user) {
         return next(new ApiError("No account found with this email/username", 404));
     }
-
     // 3. Generate a random reset token
     const resetToken = crypto.randomBytes(32).toString("hex");
-
     // 4. Hash the token for database storage
     const hashedToken = crypto.createHash("sha256")
         .update(resetToken)
         .digest("hex");
-
     // 5. Save hashed token and expiry time (10 minutes)
     user.passwordResetTokenHash = hashedToken;
     user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); 
-
     await user.save({ fields: ['passwordResetTokenHash', 'passwordResetExpires'] });
-
-    // 6. Build the reset URL
+// 6. Build the reset URL
     const resetURL = `${process.env.NGROK_URL}/api/authentication/reset-password/${resetToken}`;
-
     // 7. HTML Email Template
     const htmlContent = `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; color: #333333;">
             <div style="background-color: #1a1a1a; padding: 30px; text-align: center;">
                 <h1 style="color: #ffffff; margin: 0; font-size: 24px;">DZ Community Food</h1>
             </div>
-
             <div style="padding: 40px 30px;">
                 <h2 style="color: #2d3436; margin-top: 0;">Password Reset Request</h2>
                 <p style="font-size: 16px; line-height: 1.6; color: #636e72;">
                     Hi ${user.userName},<br>
                     We received a request to reset your password. You can do this by clicking the button below:
                 </p>
-                
                 <div style="background-color: #fff5f5; border-left: 4px solid #ff7675; padding: 15px; margin: 25px 0;">
                     <p style="margin: 0; color: #d63031; font-weight: bold; font-size: 14px;">
                         ⚠️ This link is valid for 10 minutes only.
                     </p>
                 </div>
-
-                <div style="text-align: center; margin: 35px 0;">
+               <div style="text-align: center; margin: 35px 0;">
                     <a href="${resetURL}" 
                        style="background-color: #0984e3; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                        Reset Password
                     </a>
                 </div>
-
-                <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+                                <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
 
                 <p style="font-size: 13px; color: #b2bec3;">
                     If the button doesn't work, copy and paste this link:
@@ -298,7 +287,6 @@ const forgetPassword = asyncHandler(async (req, res, next) => {
                     ${resetURL}
                 </p>
             </div>
-
             <div style="background-color: #f1f2f6; padding: 20px; text-align: center; font-size: 12px; color: #95a5a6;">
                 <p style="margin: 0;">&copy; 2026 DZ Community Food. All rights reserved.</p>
             </div>
@@ -312,11 +300,11 @@ const forgetPassword = asyncHandler(async (req, res, next) => {
             subject: "Password Reset Request (10 min expiration)",
             html: htmlContent 
         });
-
+       user.password=undefined
         res.status(200).json({ 
             status: "SUCCESS", 
             message: "Password reset link sent to your email.",
-            data: null,
+            data: {user},
             errors: null 
         });
 
@@ -331,38 +319,117 @@ const forgetPassword = asyncHandler(async (req, res, next) => {
 });
 
 
+// @desc    Verify password reset token
+// @route   GET /api/verify-reset-password-token/:token
+// @access  Public
+const verifyResetToken = asyncHandler(async (req, res, next) => {
+    const hashedToken = crypto.createHash("sha256")
+        .update(req.params.token)
+        .digest("hex");
+        const user = await User.findOne({
+        where: {
+            passwordResetTokenHash: hashedToken,
+            passwordResetExpires: { [Op.gt]: new Date() } 
+        },
+    });
+    if (!user) {
+        return next(new ApiError("Token is invalid or has expired", 400));
+    }
+    res.status(200).json({ 
+        status: "SUCCESS", 
+        message: "Token is valid. You can now reset your password.",
+        data: null,
+        errors:null 
+    });
+});
 
+
+// @desc    Set new password using token
+// @route   POST /api/reset-password/:token
+// @access  Public
+const resetPassword = asyncHandler(async (req, res, next) => {
+    const { password, passwordConfirm } = req.body;
+
+    // 1. التحقق من المدخلات ومطابقتها
+    if (!password || !passwordConfirm) {
+        return next(new ApiError("Password and confirmation are required", 400));
+    }
+
+    if (password !== passwordConfirm) {
+        return next(new ApiError("Passwords do not match", 400));
+    }
+
+    const hashedToken = crypto.createHash("sha256")
+        .update(req.params.token)
+        .digest("hex");
+
+    const user = await User.findOne({
+        where: {
+            passwordResetTokenHash: hashedToken,
+            passwordResetExpires: { [Op.gt]: new Date() }
+        }
+    });
+
+    if (!user) {
+        return next(new ApiError("Token is invalid or has expired", 400));
+    }
+
+    user.password = password; 
+    user.passwordResetTokenHash = null;
+    user.passwordResetExpires = null;
+    
+    await user.save();
+
+    const jwtToken = await GENERATE_TOKEN({ 
+        id: user.id, 
+        email: user.email, 
+        userName: user.userName 
+    });
+    user.password = undefined;
+    res.status(200).json({ 
+        status: "SUCCESS", 
+        message: "Password has been reset successfully.",
+        data: { user, jwtToken },
+        errors:null
+    });
+});
 
 
 // @desc    Protect Middleware to verify if the user logged
 
 const protect = asyncHandler(async (req, res, next) => {
     let token;
-    //check if token existe
+    
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
     }
-   if (!token) {
+
+    if (!token) {
         return next(new ApiError('You are not logged in, please login', 401));
     }
-//verify token expired time 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log(decoded);
-    //verfiy that the user existe
+
+    let decoded;
+    try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+        const message = err.name === 'TokenExpiredError' ? 'Token expired' : 'Invalid token';
+        return next(new ApiError(`${message}, please login again`, 401));
+    }
+
     const currentUser = await User.findByPk(decoded.id);
     if (!currentUser) {
         return next(new ApiError('The user belonging to this token no longer exists', 401));
     }
-//check if user change the password after token creating
-    if(currentUser.passwordChangedAt){
-   const passwordChangedAtTimestamp = parseInt(currentUser.passwordChangedAt.getTime() / 1000, 10);    
-    if(passwordChangedAtTimestamp>decoded.iat){
-                    return next(new ApiError('the user change his password .please login again...', 401));}
+    if (currentUser.passwordChangedAt) {
+        const passwordChangedAtTimestamp = parseInt(currentUser.passwordChangedAt.getTime() / 1000, 10);
+        
+        if (passwordChangedAtTimestamp > decoded.iat) {
+            return next(new ApiError('User recently changed password! Please login again.', 401));
+        }
     }
-    req.user= currentUser;
+    req.user = currentUser;
     next();
 });
-
 //// @desc    verify the permissons of the user
 
 const allwodTo=(...roles)=>
@@ -377,81 +444,115 @@ const allwodTo=(...roles)=>
 
 
 
-/////////////////////////////////////////////////
+/// @des      Complete User Onboarding and Update Profile
+// @route    PATCH /api/authentication/onboarding
+const updateProfile = asyncHandler(async (req, res, next) => {
+  const userId = req.user.id;
+    const userRole = req.body.role; 
+if (req.user.status === "suspended") {
+    return next(new ApiError("Access Denied: Your account has been suspended. Please contact support.", 403));
+  }
+if (!userRole) {
+    return next(new ApiError("Registration Incomplete: Please specify your account type (USER or RESTAURANT).", 400));
+  }
+  const user = await User.findByPk(userId);
+  if (!user) {
+    return next(new ApiError("User synchronization failed: Account not found.", 404));
+  }
+  if (user.isOnboardingCompleted) {
+    return next(new ApiError("Profile Already Active: Your onboarding process is already completed.", 400));
+  }
+  user.isOnboardingCompleted = true;
+  user.role = userRole;
+  await user.save({ fields: ['isOnboardingCompleted', 'role'] });
 
-//des       update user profile
-//route      patch /api/authentication/user/....(give me the token)
-//access     user admin
-const updateUserProfile = asyncHandler(async (req, res, next) => {
-  const userId = req.user.id;
-// 1. التحقق من الصلاحية (Role Check)
-  if (req.user.role !== "USER") {
-    return next(new ApiError("Access denied. This is not a user account", 403));
+  let Model;
+  let updateData = {};
+  if (userRole === "USER") {
+    Model = UserProfile;
+    const { basicInformation, usagePreferences } = req.body;
+    if (basicInformation) {
+      updateData = {
+        fullName: basicInformation.fullName,
+        city: basicInformation.city,
+        phoneNumber: basicInformation.phoneNumber,
+        bio: basicInformation.bio,
+        profilePicture: basicInformation.profilePicture, 
+      };
+    }
+    if (usagePreferences) {
+      updateData.usageGoal = usagePreferences.usageGoal;
+      updateData.kitchenCategory = usagePreferences.kitchenCategory;
+    }
+  } else if (userRole === "RESTAURANT") {
+    Model = RestaurantProfile;
+    const { basicInformation, locationAndContact, restaurantDetails } = req.body;
+    if (basicInformation) {
+      updateData = {
+        restaurantName: basicInformation.restaurantName,
+        restaurantLogoUrl: basicInformation.restaurantLogoUrl,
+        businessEmail: basicInformation.businessEmail,
+        phoneNumber: basicInformation.phoneNumber,
+      };
+    }
+    if (locationAndContact) {
+      updateData = {
+        ...updateData,
+        city: locationAndContact.city,
+        wilaya: locationAndContact.wilaya,
+        street: locationAndContact.street,
+        postalCode: locationAndContact.postalCode,
+        googleMapsLink: locationAndContact.googleMapsLink,
+      };
+    }
+
+    if (restaurantDetails) {
+      updateData.kitchenCategories = restaurantDetails.kitchenCategories;
+      
+      if (restaurantDetails.openingHours && restaurantDetails.openingHours.length > 0) {
+        const hours = restaurantDetails.openingHours[0];
+        updateData.openingHoursFrom = hours.openingHoursFrom;
+        updateData.openingHoursTo = hours.openingHoursTO;
+        updateData.daysOpen = hours.daysOpen; 
+      }
+    }
   }
-const allowedFields = [
-    "fullName", "profilePicture", "city", "phone", 
-    "bio", "socialLinks", "kitchenCategories", "usagePreferences"
-  ];
-const filteredData = {};
-  allowedFields.forEach((field) => {
-    if (req.body[field] !== undefined) filteredData[field] = req.body[field];
-  });
-  let profile = await UserProfile.findOne({ where: { userId } });
-  if (profile) {
-    await profile.update(filteredData);
+  let profile = await Model.findOne({ where: { userId } });
+if (!profile) {
+        profile = await Model.create({ userId, ...updateData });
   } else {
-    profile = await UserProfile.create({ userId, ...filteredData });
+        return next(new ApiError("Profile Already Active: Your onboarding process is already completed.", 400));
   }
-  res.status(200).json({ 
-    STATUS: "success", 
-    MESSAGE: "User profile updated successfully", 
-    DATA: {profile}, 
-    ERRORS: [] 
-  });
-});
-//des       update restaurant profile
-//route      patch /api/authentication/restaurant/....(give me the token)
-//access    restaurant admin
-const updateRestaurantProfile = asyncHandler(async (req, res, next) => {
-  const userId = req.user.id;
-if (req.user.role !== "RESTAURANT") {
-    return next(new ApiError("Access denied. This is not a restaurant account", 403));
-  }
-  const allowedFields = [
-    "restaurantName", "businessEmail", "phoneNumber", "profilePicture",
-    "city", "wilaya", "street", "postalCode", "googleMapsLink",
-    "kitchenCategories", "openingHoursFrom", "openingHoursTo",
-    "daysOpen", "services", "businessRegistrationNumber", "description"
-  ];
-  const filteredData = {};
-  allowedFields.forEach((field) => {
-    if (req.body[field] !== undefined) filteredData[field] = req.body[field];
-  });
-  let profile = await RestaurantProfile.findOne({ where: { userId } });
-  if (profile) {
-    await profile.update(filteredData);
-  } else {
-    profile = await RestaurantProfile.create({ userId, ...filteredData });
-  }
-  res.status(200).json({ 
-    STATUS: "success", 
-    MESSAGE: "Restaurant profile updated successfully", 
-    DATA: {profile}, 
-    ERRORS: [] 
+  res.status(200).json({
+    status: "SUCCESS",
+    message: "Onboarding completed successfully. Welcome to DZ Food Community!",
+    data: {
+        "user-App-Model":{
+         userRole,
+         user,
+         profile,   
+        }
+    },
+    errors: []
   });
 });
 module.exports = { 
     signup, 
+    verifyEmail,
+    sendVerificationEmail,
+    resend_verification_email,
+
     signin, 
-    send_verification_email,
-    protect, 
-    forgetPassword, 
-    verifyEmail, 
-    sendVerificationEmail ,
-    updateUserProfile,
-    updateRestaurantProfile,
-    allwodTo,
     logout,
+ 
+    forgetPassword,
+    verifyResetToken,
+    resetPassword,
+ 
+    updateProfile,
+  
     
+    protect,
+    allwodTo,
     
 };
