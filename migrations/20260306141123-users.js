@@ -34,8 +34,8 @@ module.exports = {
         type: Sequelize.DATE
       },
       role: {
-        type: Sequelize.ENUM("USER", "RESTAURANT", "ADMIN"),
-        defaultValue: "USER"
+        type: Sequelize.ENUM("USER", "RESTAURANT", "ADMIN","GUEST"),
+        defaultValue:"GUEST"
       },
       status: {
         type: Sequelize.ENUM("ACTIVE", "SUSPENDED"),

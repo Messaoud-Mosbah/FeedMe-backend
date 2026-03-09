@@ -28,9 +28,7 @@ module.exports = {
       city: { 
         type: Sequelize.STRING(50) 
       },
-      wilaya: { 
-        type: Sequelize.STRING(50) 
-      },
+     
       street: { 
         type: Sequelize.STRING(50), 
         allowNull: true 
@@ -43,22 +41,18 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true,
       },
-      kitchenCategories: {
+      kitchenCategory: {
         type: Sequelize.JSON, 
       },
-      openingHoursFrom: { 
-        type: Sequelize.TIME 
-      },
-      openingHoursTo: { 
-        type: Sequelize.TIME 
-      },
-      daysOpen: {
-        type: Sequelize.JSON,
+    openingHours: {
+       type: Sequelize.JSON,
+       allowNull: true,
+       defaultValue: [], 
+       comment: "structure : [{ day: 'Saturday', from: '08:00', to: '22:00' }, ...]"
       },
       services: {
         type: Sequelize.JSON,
-       
-        defaultValue: JSON.stringify({ dineIn: false, takeaway: false, delivery: false, reservation: false }),
+        defaultValue: JSON.stringify({ dineIn: "NO", takeaway: "NO", delivery: "NO", reservation: "NO" }),
       },
       userId: {
         type: Sequelize.UUID,

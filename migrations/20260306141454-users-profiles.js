@@ -32,10 +32,14 @@ module.exports = {
      usageGoal:{
           type: Sequelize.JSON, 
           allowNull: true,
+            defaultValue: [], // مصفوفة فارغة افتراضياً
+
            },
         kitchenCategory: {
           type: Sequelize.JSON, 
           allowNull: true,
+            defaultValue: [], // مصفوفة فارغة افتراضياً
+
         },
       userId: {
         type: Sequelize.UUID, 

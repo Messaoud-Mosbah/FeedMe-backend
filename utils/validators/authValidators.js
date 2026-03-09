@@ -64,38 +64,49 @@ const loginValidator = [
 
 
 const KITCHEN_TYPES = ["vegetarian", "Fast Food", "Deserts & Sweets", "Seafood", "Healthy Food", "Traditional dishes"];
-const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const updateProfileValidator = [
   check("role")
     .notEmpty().withMessage("Account type (role) is required to complete profile.")
     .isIn(["USER", "RESTAURANT"]).withMessage("Invalid role type. Must be USER or RESTAURANT."),
 
-  check("basicInformation.fullName")
+  // --- USER Section ---
+  check("userBasicInformation.fullName")
     .if((value, { req }) => req.body.role === "USER")
     .notEmpty().withMessage("Full name is required for user profile."),
 
-  check("basicInformation.phoneNumber")
-    .if((value, { req }) => req.body.role === "USER" && req.body.basicInformation?.phoneNumber)
-    .isMobilePhone("any").withMessage("Please provide a valid phone number."),
+  check("userBasicInformation.phoneNumber")
+    .if((value, { req }) => req.body.role === "USER" && req.body.userBasicInformation?.phoneNumber)
+    .matches(/^(0)(5|6|7|2|3|4)\d{8}$/).withMessage("Please provide a valid Algerian phone number (e.g., 0550123456)."),
 
-  check("usagePreferences.usageGoal")
+  check("userUsagePreferences.usageGoal")
     .if((value, { req }) => req.body.role === "USER")
-    .notEmpty().withMessage("Usage goal is required for personalization."),
+    .optional({ checkFalsy: true }) 
+    .isArray().withMessage("Usage goal must be an array."),
 
-  check("basicInformation.restaurantName")
+  check("userUsagePreferences.kitchenCategory")
+    .if((value, { req }) => req.body.role === "USER")
+    .optional({ checkFalsy: true }) 
+    .isArray().withMessage("Kitchen category must be an array.")
+    .custom((value) => {
+      if (value && value.length > 0) {
+        const isValid = value.every((cat) => KITCHEN_TYPES.includes(cat));
+        if (!isValid) throw new Error("One or more selected categories are invalid.");
+      }
+      return true;
+    }),
+
+  // --- RESTAURANT Section ---
+  check("restaurantBasicInformation.restaurantName")
     .if((value, { req }) => req.body.role === "RESTAURANT")
     .notEmpty().withMessage("Restaurant name is mandatory."),
 
-  check("locationAndContact.city")
+  check("restaurantLocationAndContact.city")
     .if((value, { req }) => req.body.role === "RESTAURANT")
     .notEmpty().withMessage("City location is required."),
 
-  check("locationAndContact.wilaya")
-    .if((value, { req }) => req.body.role === "RESTAURANT")
-    .notEmpty().withMessage("Wilaya (Province) is required."),
-
-  check("restaurantDetails.kitchenCategories")
+  check("restaurantDetails.kitchenCategory")
     .if((value, { req }) => req.body.role === "RESTAURANT")
     .isArray({ min: 1 }).withMessage("Select at least one kitchen category.")
     .custom((value) => {
@@ -103,26 +114,44 @@ const updateProfileValidator = [
       if (!isValid) throw new Error(`Invalid category. Allowed: ${KITCHEN_TYPES.join(", ")}`);
       return true;
     }),
-
+// --- Opening Hours (Optional) ---
   check("restaurantDetails.openingHours")
     .if((value, { req }) => req.body.role === "RESTAURANT")
-    .isArray().withMessage("Opening hours must be provided as an array.")
+    .optional({ checkFalsy: true }) 
+    .isArray().withMessage("Opening hours must be an array.")
     .custom((value) => {
-      const hours = value[0];
-      if (!hours || !hours.openingHoursFrom || !hours.openingHoursTO) {
-        throw new Error("Both opening (From) and closing (TO) times are required.");
+      if (value && value.length > 0) {
+        const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/; 
+        value.forEach((item, index) => {
+          if (!item.day || !DAYS_OF_WEEK.includes(item.day)) {
+            throw new Error(`Item at index ${index + 1}: Invalid day name.`);
+          }
+          if (!item.from || !item.to) {
+            throw new Error(`Day ${item.day}: 'from' and 'to' times are required.`);
+          }
+          if (!timeRegex.test(item.from) || !timeRegex.test(item.to)) {
+            throw new Error(`Day ${item.day}: Invalid time format (HH:mm).`);
+          }
+        });
       }
-      if (!Array.isArray(hours.daysOpen) || hours.daysOpen.length === 0) {
-        throw new Error("Please select at least one operating day.");
-      }
-      const isValidDays = hours.daysOpen.every(d => DAYS_OF_WEEK.includes(d));
-      if (!isValidDays) throw new Error("One or more selected days are invalid.");
       return true;
     }),
 
+  check("restaurantDetails.services")
+    .if((value, { req }) => req.body.role === "RESTAURANT")
+    .optional({ checkFalsy: true }) 
+    .custom((value) => {
+      if (value && Object.keys(value).length > 0) {
+        const allowedKeys = ["dineIn", "takeaway", "delivery", "reservation", "parkAvailability"];
+        Object.keys(value).forEach((key) => {
+          if (!allowedKeys.includes(key)) throw new Error(`Invalid service key: ${key}`);
+          if (!["YES", "NO"].includes(value[key])) throw new Error(`Service '${key}' must be YES or NO.`);
+        });
+      }
+      return true;
+    }),
   validatorMiddleware,
 ];
-
 // @desc    validate  reset password
 const validatePassword = [
   check("password")

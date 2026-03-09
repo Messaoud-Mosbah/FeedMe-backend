@@ -449,9 +449,7 @@ const allwodTo=(...roles)=>
 const updateProfile = asyncHandler(async (req, res, next) => {
   const userId = req.user.id;
     const userRole = req.body.role; 
-if (req.user.status === "suspended") {
-    return next(new ApiError("Access Denied: Your account has been suspended. Please contact support.", 403));
-  }
+
 if (!userRole) {
     return next(new ApiError("Registration Incomplete: Please specify your account type (USER or RESTAURANT).", 400));
   }
@@ -470,52 +468,54 @@ if (!userRole) {
   let updateData = {};
   if (userRole === "USER") {
     Model = UserProfile;
-    const { basicInformation, usagePreferences } = req.body;
-    if (basicInformation) {
+    const { userBasicInformation, userUsagePreferences } = req.body;
+    if (userBasicInformation) {
       updateData = {
-        fullName: basicInformation.fullName,
-        city: basicInformation.city,
-        phoneNumber: basicInformation.phoneNumber,
-        bio: basicInformation.bio,
-        profilePicture: basicInformation.profilePicture, 
+        fullName: userBasicInformation.fullName,
+        city: userBasicInformation.city,
+        phoneNumber: userBasicInformation.phoneNumber,
+        bio: userBasicInformation.bio,
+        profilePicture: userBasicInformation.profilePicture, 
       };
     }
-    if (usagePreferences) {
-      updateData.usageGoal = usagePreferences.usageGoal;
-      updateData.kitchenCategory = usagePreferences.kitchenCategory;
+    if (userUsagePreferences) {
+      updateData.usageGoal = userUsagePreferences.usageGoal;
+      updateData.kitchenCategory = userUsagePreferences.kitchenCategory;
     }
   } else if (userRole === "RESTAURANT") {
     Model = RestaurantProfile;
-    const { basicInformation, locationAndContact, restaurantDetails } = req.body;
-    if (basicInformation) {
+    const { restaurantBasicInformation, restaurantLocationAndContact, restaurantDetails } = req.body;
+    if (restaurantBasicInformation) {
       updateData = {
-        restaurantName: basicInformation.restaurantName,
-        restaurantLogoUrl: basicInformation.restaurantLogoUrl,
-        businessEmail: basicInformation.businessEmail,
-        phoneNumber: basicInformation.phoneNumber,
+        restaurantName: restaurantBasicInformation.restaurantName,
+        restaurantLogoUrl: restaurantBasicInformation.restaurantLogoUrl,
+        businessEmail: restaurantBasicInformation.businessEmail,
+        phoneNumber: restaurantBasicInformation.phoneNumber,
       };
     }
-    if (locationAndContact) {
+    if (restaurantLocationAndContact) {
       updateData = {
         ...updateData,
-        city: locationAndContact.city,
-        wilaya: locationAndContact.wilaya,
-        street: locationAndContact.street,
-        postalCode: locationAndContact.postalCode,
-        googleMapsLink: locationAndContact.googleMapsLink,
+        city: restaurantLocationAndContact.city,
+         wilaya: restaurantLocationAndContact.wilaya,
+        street: restaurantLocationAndContact.street,
+        postalCode: restaurantLocationAndContact.postalCode,
+        googleMapsLink: restaurantLocationAndContact.googleMapsLink,
       };
     }
 
     if (restaurantDetails) {
-      updateData.kitchenCategories = restaurantDetails.kitchenCategories;
-      
-      if (restaurantDetails.openingHours && restaurantDetails.openingHours.length > 0) {
-        const hours = restaurantDetails.openingHours[0];
-        updateData.openingHoursFrom = hours.openingHoursFrom;
-        updateData.openingHoursTo = hours.openingHoursTO;
-        updateData.daysOpen = hours.daysOpen; 
+  updateData.kitchenCategory = restaurantDetails.kitchenCategory;
+
+  if (restaurantDetails.openingHours && Array.isArray(restaurantDetails.openingHours)) {
+     
+   updateData.openingHours = restaurantDetails.openingHours; 
+  }
+  if (restaurantDetails.services) {
+        updateData.services = restaurantDetails.services;
       }
-    }
+  
+}
   }
   let profile = await Model.findOne({ where: { userId } });
 if (!profile) {
@@ -533,7 +533,7 @@ if (!profile) {
          profile,   
         }
     },
-    errors: []
+    errors: null,
   });
 });
 module.exports = { 

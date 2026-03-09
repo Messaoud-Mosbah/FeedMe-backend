@@ -27,14 +27,16 @@ const UserProfile = sequelize.define("UserProfile", {
     type: DataTypes.STRING(255),
     defaultValue: "default.png",
   },
-  usageGoal:{
-    type: DataTypes.JSON, 
-    allowNull: true,
-     },
-  kitchenCategory: {
-    type: DataTypes.JSON, 
-    allowNull: true,
-  },
+usageGoal: {
+  type: DataTypes.JSON, 
+  allowNull: true,
+  defaultValue: [], // مصفوفة فارغة افتراضياً
+},
+kitchenCategory: {
+  type: DataTypes.JSON, 
+  allowNull: true,
+  defaultValue: [],
+},
   
   userId: {
     type: DataTypes.UUID, 

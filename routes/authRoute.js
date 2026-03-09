@@ -43,7 +43,7 @@ router.get("/verify-reset-password-token/:token", verifyResetToken);
 ////////////////////////////////////
 router.post("/reset-password/:token", validatePassword, resetPassword);
 
-router.patch("/onboarding",protect, updateProfileValidator,  updateProfile,); 
+router.patch("/onboarding",protect,updateProfileValidator,  updateProfile,); 
 
 
 module.exports = router;
