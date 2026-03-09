@@ -72,20 +72,20 @@ const updateProfileValidator = [
     .isIn(["USER", "RESTAURANT"]).withMessage("Invalid role type. Must be USER or RESTAURANT."),
 
   // --- USER Section ---
-  check("userBasicInformation.fullName")
+  check("profile.userBasicInformation.fullName")
     .if((value, { req }) => req.body.role === "USER")
     .notEmpty().withMessage("Full name is required for user profile."),
 
-  check("userBasicInformation.phoneNumber")
+  check("profile.userBasicInformation.phoneNumber")
     .if((value, { req }) => req.body.role === "USER" && req.body.userBasicInformation?.phoneNumber)
     .matches(/^(0)(5|6|7|2|3|4)\d{8}$/).withMessage("Please provide a valid Algerian phone number (e.g., 0550123456)."),
 
-  check("userUsagePreferences.usageGoal")
+  check("profile.userUsagePreferences.usageGoal")
     .if((value, { req }) => req.body.role === "USER")
     .optional({ checkFalsy: true }) 
     .isArray().withMessage("Usage goal must be an array."),
 
-  check("userUsagePreferences.kitchenCategory")
+  check("profile.userUsagePreferences.kitchenCategory")
     .if((value, { req }) => req.body.role === "USER")
     .optional({ checkFalsy: true }) 
     .isArray().withMessage("Kitchen category must be an array.")
@@ -98,15 +98,15 @@ const updateProfileValidator = [
     }),
 
   // --- RESTAURANT Section ---
-  check("restaurantBasicInformation.restaurantName")
+  check("profile.restaurantBasicInformation.restaurantName")
     .if((value, { req }) => req.body.role === "RESTAURANT")
     .notEmpty().withMessage("Restaurant name is mandatory."),
 
-  check("restaurantLocationAndContact.city")
+  check("profile.restaurantLocationAndContact.city")
     .if((value, { req }) => req.body.role === "RESTAURANT")
     .notEmpty().withMessage("City location is required."),
 
-  check("restaurantDetails.kitchenCategory")
+  check("profile.restaurantDetails.kitchenCategory")
     .if((value, { req }) => req.body.role === "RESTAURANT")
     .isArray({ min: 1 }).withMessage("Select at least one kitchen category.")
     .custom((value) => {
@@ -115,7 +115,7 @@ const updateProfileValidator = [
       return true;
     }),
 // --- Opening Hours (Optional) ---
-  check("restaurantDetails.openingHours")
+  check("profile.restaurantDetails.openingHours")
     .if((value, { req }) => req.body.role === "RESTAURANT")
     .optional({ checkFalsy: true }) 
     .isArray().withMessage("Opening hours must be an array.")
@@ -137,7 +137,7 @@ const updateProfileValidator = [
       return true;
     }),
 
-  check("restaurantDetails.services")
+  check("profile.restaurantDetails.services")
     .if((value, { req }) => req.body.role === "RESTAURANT")
     .optional({ checkFalsy: true }) 
     .custom((value) => {

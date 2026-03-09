@@ -27,7 +27,7 @@ if (process.env.NODE_ENV === "development") {
 }
 
 app.use("/api/users", userRouter);
-app.use("/api", authRouter);
+app.use("/api/authentication", authRouter);
 
 app.all("*", (req, res, next) => {
   next(new ApiError(`Can't find this route: ${req.originalUrl}`, 400));

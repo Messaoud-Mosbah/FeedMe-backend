@@ -39,7 +39,7 @@ router.post("/sign-out", protect, logout);
 router.post("/sign-in", loginValidator, signin);
 
 router.post("/forget-password", forgetPassword); 
-router.get("/verify-reset-password-token/:token", verifyResetToken);
+router.get("/verify-reset-password-token", verifyResetToken);
 ////////////////////////////////////
 router.post("/reset-password/:token", validatePassword, resetPassword);
 

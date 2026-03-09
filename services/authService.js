@@ -39,9 +39,8 @@ const sendVerificationEmail = async (user) => {
     user.verificationTokenExpires = new Date(Date.now() + 10 * 60 * 1000); 
 
     await user.save({ fields: ['verificationTokenHash', 'verificationTokenExpires'] });
-
-    const verificationURL = `${process.env.NGROK_URL}/api/verify-email-token/${verificationTokenHash}`;
-
+//  const verificationURL = `http://localhost:3000/verify-reset-password?token=${resetToken}`
+const verificationURL = `${process.env.NGROK_URL}/verify-email?token=${verificationTokenHash}`;
    const htmlContent = `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; color: #333333;">
         <div style="background-color: #1a1a1a; padding: 30px; text-align: center;">
@@ -134,7 +133,7 @@ user.password=undefined;
 // @route   POST /api/resend-verification-email
 // @access  Public
 const resend_verification_email = asyncHandler(async (req, res, next) => {
-    const { email } = req.query;
+    const { email } = req.body;
     if (!email) {
         return next(new ApiError("Email is required in request body", 400));
     }
@@ -180,7 +179,7 @@ const signin = asyncHandler(async (req, res, next) => {
         return next(new ApiError("Invalid email/username or password", 401));
      }
     if(!user.isVerified){
-     return res.status(403).json({
+     return res.status(200).json({
         status: "SUCCESS",
         message: " you must verified your acount....",
         data: { user },
@@ -255,6 +254,8 @@ const forgetPassword = asyncHandler(async (req, res, next) => {
     await user.save({ fields: ['passwordResetTokenHash', 'passwordResetExpires'] });
 // 6. Build the reset URL
     const resetURL = `${process.env.NGROK_URL}/api/authentication/reset-password/${resetToken}`;
+
+    // const resetURL = `http://localhost:3000/verify-reset-password?token=${resetToken}`
     // 7. HTML Email Template
     const htmlContent = `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; color: #333333;">
@@ -348,32 +349,25 @@ const verifyResetToken = asyncHandler(async (req, res, next) => {
 // @route   POST /api/reset-password/:token
 // @access  Public
 const resetPassword = asyncHandler(async (req, res, next) => {
-    const { password, passwordConfirm } = req.body;
-
-    // 1. التحقق من المدخلات ومطابقتها
+    const { password, passwordConfirm ,identifier} = req.body;
+7
     if (!password || !passwordConfirm) {
         return next(new ApiError("Password and confirmation are required", 400));
+    }  if (!identifier) {
+        return next(new ApiError("Email  is required", 400));
+    }
+    const user = await User.findOne({
+        where: {
+            [Op.or]: [{ email: identifier }, { userName: identifier }]
+        }
+    });
+    if (!user) {
+        return next(new ApiError("No account found with this email", 404));
     }
 
     if (password !== passwordConfirm) {
         return next(new ApiError("Passwords do not match", 400));
     }
-
-    const hashedToken = crypto.createHash("sha256")
-        .update(req.params.token)
-        .digest("hex");
-
-    const user = await User.findOne({
-        where: {
-            passwordResetTokenHash: hashedToken,
-            passwordResetExpires: { [Op.gt]: new Date() }
-        }
-    });
-
-    if (!user) {
-        return next(new ApiError("Token is invalid or has expired", 400));
-    }
-
     user.password = password; 
     user.passwordResetTokenHash = null;
     user.passwordResetExpires = null;
@@ -386,6 +380,13 @@ const resetPassword = asyncHandler(async (req, res, next) => {
         userName: user.userName 
     });
     user.password = undefined;
+     if(!user.isVerified){
+     return res.status(200).json({
+        status: "SUCCESS",
+        message: " you must verified your acount....",
+        data: { user },
+        errors:null
+    });    }
     res.status(200).json({ 
         status: "SUCCESS", 
         message: "Password has been reset successfully.",
@@ -400,10 +401,13 @@ const resetPassword = asyncHandler(async (req, res, next) => {
 const protect = asyncHandler(async (req, res, next) => {
     let token;
     
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        token = req.headers.authorization.split(' ')[1];
-    }
+// الوصول للقيمة بغض النظر عن حالة الأحرف (إذا كنت لا تستخدم Express)
+const authHeader = req.headers['authorization'] || req.headers['Authorization'];
 
+if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+}
+console.log(token)
     if (!token) {
         return next(new ApiError('You are not logged in, please login', 401));
     }
