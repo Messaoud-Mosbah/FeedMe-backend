@@ -137,7 +137,7 @@ const updateProfileValidator = [
       return true;
     }),
 
-  check("profile.restaurantDetails.services")
+  check("profile.restaurantServices")
     .if((value, { req }) => req.body.role === "RESTAURANT")
     .optional({ checkFalsy: true }) 
     .custom((value) => {

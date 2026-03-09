@@ -431,8 +431,11 @@ console.log(token)
             return next(new ApiError('User recently changed password! Please login again.', 401));
         }
     }
-    req.user = currentUser;
-    next();
+req.authenticatedUser = {
+    id: currentUser.id,
+    role: currentUser.role,
+    passwordChangedAt: currentUser.passwordChangedAt
+};    next();
 });
 //// @desc    verify the permissons of the user
 
@@ -451,7 +454,7 @@ const allwodTo=(...roles)=>
 /// @des      Complete User Onboarding and Update Profile
 // @route    PATCH /api/authentication/onboarding
 const updateProfile = asyncHandler(async (req, res, next) => {
-  const userId = req.user.id;
+  const userId = req.authenticatedUser.id;
     const userRole = req.body.role; 
 
 if (!userRole) {
@@ -472,7 +475,7 @@ if (!userRole) {
   let updateData = {};
   if (userRole === "USER") {
     Model = UserProfile;
-    const { userBasicInformation, userUsagePreferences } = req.body;
+    const { userBasicInformation, userUsagePreferences } = req.body.profile;
     if (userBasicInformation) {
       updateData = {
         fullName: userBasicInformation.fullName,
@@ -488,7 +491,7 @@ if (!userRole) {
     }
   } else if (userRole === "RESTAURANT") {
     Model = RestaurantProfile;
-    const { restaurantBasicInformation, restaurantLocationAndContact, restaurantDetails } = req.body;
+    const { restaurantBasicInformation, restaurantLocationAndContact, restaurantDetails } = req.body.profile;
     if (restaurantBasicInformation) {
       updateData = {
         restaurantName: restaurantBasicInformation.restaurantName,
@@ -514,12 +517,12 @@ if (!userRole) {
   if (restaurantDetails.openingHours && Array.isArray(restaurantDetails.openingHours)) {
      
    updateData.openingHours = restaurantDetails.openingHours; 
-  }
-  if (restaurantDetails.services) {
-        updateData.services = restaurantDetails.services;
+  }}
+  if (restaurantServices) {
+        updateData.services = restaurantservices;
       }
   
-}
+
   }
   let profile = await Model.findOne({ where: { userId } });
 if (!profile) {

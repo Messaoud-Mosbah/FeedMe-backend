@@ -74,7 +74,7 @@ const RestaurantProfile = sequelize.define("RestaurantProfile", {
 },
   services: {
     type: DataTypes.JSON,
-    defaultValue: { dineIn: "NO", takeaway: "NO", delivery: "NO", reservation: "NO" ,parkAvailability:"NO" },/////
+    defaultValue: { dineIn: "NO", specialCustomerService: "NO", delivery: "NO", reservation: "NO" ,parkAvailability:"NO" },/////
   },
   userId: {
     type: DataTypes.UUID,

@@ -52,7 +52,7 @@ module.exports = {
       },
       services: {
         type: Sequelize.JSON,
-        defaultValue: JSON.stringify({ dineIn: "NO", takeaway: "NO", delivery: "NO", reservation: "NO" }),
+        defaultValue: JSON.stringify({ dineIn: "NO", specialCustomerService: "NO", delivery: "NO", reservation: "NO" }),
       },
       userId: {
         type: Sequelize.UUID,
