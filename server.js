@@ -13,6 +13,7 @@ const globalError = require("./middlewares/errorMiddleware");
 
 const userRouter = require("./routes/userRoute");
 const authRouter = require("./routes/authRoute");
+const postRoutes = require('./routes/postRoutes')
 
 const app = express();
 
@@ -28,6 +29,8 @@ if (process.env.NODE_ENV === "development") {
 
 app.use("/api/users", userRouter);
 app.use("/api", authRouter);
+app.use('/api/posts', postRoutes)
+
 
 app.all("*", (req, res, next) => {
   next(new ApiError(`Can't find this route: ${req.originalUrl}`, 400));

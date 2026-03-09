@@ -36,3 +36,27 @@ router.patch( "/:id",  changeUserPasswordValidator,changeUserPassword,);
 router.delete("/:id",deleteUserValidator,deleteUser);
 
 module.exports = router;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+router.post(
+  'posts/',
+  authMiddleware,
+  allowedTo('USER', 'RESTAURANT'),   // ← ADMIN peut pas poster
+  upload.single('media'),             // ← multer
+  validateCreatePost,                 // ← validation
+  postController.createPost
+)
