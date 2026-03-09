@@ -469,7 +469,6 @@ if (!userRole) {
   }
   user.isOnboardingCompleted = true;
   user.role = userRole;
-  await user.save({ fields: ['isOnboardingCompleted', 'role'] });
 
   let Model;
   let updateData = {};
@@ -527,6 +526,8 @@ if (!userRole) {
   let profile = await Model.findOne({ where: { userId } });
 if (!profile) {
         profile = await Model.create({ userId, ...updateData });
+        await user.save();
+
   } else {
         return next(new ApiError("Profile Already Active: Your onboarding process is already completed.", 400));
   }
@@ -534,8 +535,7 @@ if (!profile) {
     status: "SUCCESS",
     message: "Onboarding completed successfully. Welcome to DZ Food Community!",
     data: {
-        "user-App-Model":{
-         userRole,
+        user:{
          user,
          profile,   
         }
