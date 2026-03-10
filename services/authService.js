@@ -253,7 +253,7 @@ const forgetPassword = asyncHandler(async (req, res, next) => {
     user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); 
     await user.save({ fields: ['passwordResetTokenHash', 'passwordResetExpires'] });
 // 6. Build the reset URL
-    const resetURL = `${process.env.NGROK_URL}/api/authentication/reset-password/${resetToken}`;
+    const resetURL = `${process.env.NGROK_URL}/api/authentication/verify-reset-password-token/${resetToken}`;
 
     // const resetURL = `http://localhost:3000/verify-reset-password?token=${resetToken}`
     // 7. HTML Email Template
