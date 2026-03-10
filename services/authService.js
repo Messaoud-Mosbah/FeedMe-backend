@@ -490,7 +490,7 @@ if (!userRole) {
     }
   } else if (userRole === "RESTAURANT") {
     Model = RestaurantProfile;
-    const { restaurantBasicInformation, restaurantLocationAndContact, restaurantDetails } = req.body.profile;
+    const { restaurantBasicInformation, restaurantLocationAndContact, restaurantDetails ,restaurantServices} = req.body.profile;
     if (restaurantBasicInformation) {
       updateData = {
         restaurantName: restaurantBasicInformation.restaurantName,
@@ -518,7 +518,7 @@ if (!userRole) {
    updateData.openingHours = restaurantDetails.openingHours; 
   }}
   if (restaurantServices) {
-        updateData.services = restaurantservices;
+        updateData.services = restaurantServices;
       }
   
 
