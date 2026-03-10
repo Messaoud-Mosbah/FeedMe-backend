@@ -31,7 +31,7 @@ validatePassword,
 
 
 router.post("/sign-up", signupValidator, signup);
-router.get("/verify-email-token/:token", verifyEmail);
+router.get("/verify-reset-password-token", verifyResetToken);
 router.post("/resend-verification-email",resend_verification_email);
 
 router.post("/sign-out", protect, logout);
