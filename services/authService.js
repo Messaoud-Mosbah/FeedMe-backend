@@ -40,7 +40,7 @@ const sendVerificationEmail = async (user) => {
 
     await user.save({ fields: ['verificationTokenHash', 'verificationTokenExpires'] });
 //  const verificationURL = `http://localhost:3000/verify-reset-password?token=${resetToken}`
-const verificationURL = `${process.env.NGROK_URL}/verify-email?token=${verificationTokenHash}`;
+const verificationURL = `${process.env.NGROK_URL}/api/authentication/verify-email-token/${verificationTokenHash}`;
    const htmlContent = `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; color: #333333;">
         <div style="background-color: #1a1a1a; padding: 30px; text-align: center;">
