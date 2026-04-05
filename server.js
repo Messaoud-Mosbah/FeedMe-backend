@@ -15,21 +15,28 @@ const authRouter = require("./routes/authRoute");
 const editProfileRouter = require("./routes/editProfileRoute");
 const viewProfileRouter = require("./routes/viewProfileRoute");
 const postRoutes = require("./routes/postRoutes");
-
+const productRoutes = require("./routes/productRoute");
+const storeRoutes = require("./routes/storeRoute");
 
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({
-  origin:"*",
-  // 'http://localhost:3000',
-  // 'https://polyhydroxy-kinkily-kathe.ngrok-free.dev'
+app.use(
+  cors({
+    origin: "*",
+    // 'http://localhost:3000',
+    // 'https://polyhydroxy-kinkily-kathe.ngrok-free.dev'
 
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
-}));
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "ngrok-skip-browser-warning",
+    ],
+  }),
+);
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
   console.log(`mode: ${process.env.NODE_ENV}`);
@@ -40,7 +47,8 @@ app.use("/api/authentication", authRouter);
 app.use("/api/profile", editProfileRouter);
 app.use("/api/profile", viewProfileRouter);
 app.use("/api/posts", postRoutes);
-
+app.use("/api/products", productRoutes);
+app.use("/api/store", storeRoutes);
 
 app.all("*", (req, res, next) => {
   next(new ApiError(`Can't find this route: ${req.originalUrl}`, 400));
