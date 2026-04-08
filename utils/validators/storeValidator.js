@@ -1,4 +1,4 @@
-const { query } = require("express-validator");
+const { query, param } = require("express-validator");
 const validatorMiddleware = require("../../middlewares/validatorMiddleware");
 
 const ALLOWED_CATEGORIES = [
@@ -10,7 +10,12 @@ const ALLOWED_CATEGORIES = [
   "Traditional dishes",
 ];
 
-const ALLOWED_SORTS = ["price_desc", "rating_desc"];
+const ALLOWED_SORTS = [
+  "price_desc",
+  "price_asc",
+  "preparationTime_asc",
+  "preparationTime_desc",
+];
 
 exports.browseProductsValidator = [
   query("cursor")
@@ -51,5 +56,9 @@ exports.browseProductsValidator = [
     .isIn(ALLOWED_SORTS)
     .withMessage(`Invalid sort. Allowed: ${ALLOWED_SORTS.join(", ")}`),
 
+  validatorMiddleware,
+];
+exports.productDetailValidator = [
+  param("id").isUUID(4).withMessage("Invalid product ID"),
   validatorMiddleware,
 ];

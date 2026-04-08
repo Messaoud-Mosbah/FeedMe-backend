@@ -10,7 +10,7 @@ module.exports = {
         primaryKey: true,
         allowNull: false,
       },
-      title: {
+      name: {
         type: Sequelize.STRING(100),
         allowNull: false,
       },
@@ -30,17 +30,8 @@ module.exports = {
         type: Sequelize.STRING(255),
         allowNull: false,
       },
-      ratingsAverage: {
-        type: Sequelize.FLOAT,
-        allowNull: true,
-      },
-      ratingsQuantity: {
+      preparingTime: {
         type: Sequelize.INTEGER,
-        allowNull: false,
-        defaultValue: 0,
-      },
-      category: {
-        type: Sequelize.JSON,
         allowNull: false,
       },
       restaurantProfileId: {
@@ -50,16 +41,19 @@ module.exports = {
           model: "restaurant_profiles",
           key: "id",
         },
-        onUpdate: "CASCADE",
         onDelete: "CASCADE",
       },
-      createdAt: {
+      category: {
+        type: Sequelize.JSON,
         allowNull: false,
+      },
+      createdAt: {
         type: Sequelize.DATE,
+        allowNull: false,
       },
       updatedAt: {
-        allowNull: false,
         type: Sequelize.DATE,
+        allowNull: false,
       },
     });
   },

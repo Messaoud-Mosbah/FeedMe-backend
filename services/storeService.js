@@ -1,14 +1,22 @@
 const asyncHandler = require("express-async-handler");
 const { Op, Sequelize } = require("sequelize");
-const { Product, RestaurantProfile } = require("../models");
-
+const { Product, RestaurantProfile, User } = require("../models");
+const ApiError = require("../utils/apiError");
 const SORT_OPTIONS = {
   price_desc: [
     ["price", "DESC"],
     ["createdAt", "DESC"],
   ],
-  rating_desc: [
-    ["ratingsAverage", "DESC"],
+  price_asc: [
+    ["price", "ASC"],
+    ["createdAt", "DESC"],
+  ],
+  preparation_desc: [
+    ["preparingTime", "DESC"],
+    ["createdAt", "DESC"],
+  ],
+  preparation_asc: [
+    ["preparingTime", "ASC"],
     ["createdAt", "DESC"],
   ],
 };
@@ -55,7 +63,13 @@ exports.browseProducts = asyncHandler(async (req, res, next) => {
       {
         model: RestaurantProfile,
         as: "restaurant",
-        attributes: ["id", "restaurantName", "city", "restaurantLogoUrl"],
+        attributes: ["id", "restaurantName", "restaurantLogoUrl"],
+        include: [
+          {
+            model: User,
+            attributes: ["userName"],
+          },
+        ],
       },
     ],
   });
@@ -69,6 +83,36 @@ exports.browseProducts = asyncHandler(async (req, res, next) => {
     data: { products },
     nextCursor,
     results: products.length,
+    errors: null,
+  });
+});
+// @desc   Get single product detail
+// @route  GET /api/store/products/:id
+// @access USER
+exports.getProductDetail = asyncHandler(async (req, res, next) => {
+  const product = await Product.findOne({
+    where: { id: req.params.id },
+    include: [
+      {
+        model: RestaurantProfile,
+        as: "restaurant",
+        attributes: ["id", "restaurantName", "restaurantLogoUrl"],
+        include: [
+          {
+            model: User,
+            attributes: ["userName"],
+          },
+        ],
+      },
+    ],
+  });
+
+  if (!product) return next(new ApiError("Product not found", 404));
+
+  res.status(200).json({
+    status: "SUCCESS",
+    message: "Product fetched successfully",
+    data: { product },
     errors: null,
   });
 });

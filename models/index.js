@@ -9,7 +9,6 @@ const RestaurantProfile = require("./restaurantProfileModel");
 const Post = require("./postModel");
 const PostMedia = require("./PostMedia");
 const Product = require("./productModel");
-
 if (
   !User ||
   !UserProfile ||
@@ -78,6 +77,7 @@ Product.belongsTo(RestaurantProfile, {
   foreignKey: "restaurantProfileId",
   as: "restaurant",
 });
+
 module.exports = {
   sequelize,
   User,
