@@ -5,9 +5,12 @@ const { protect } = require("../services/authService");
 const { allwodTo } = require("../services/editProfile");
 const {
   browseProductsValidator,
+  productDetailValidator,
 } = require("../utils/validators/storeValidator");
-const { browseProducts } = require("../services/storeService");
-
+const {
+  browseProducts,
+  getProductDetail,
+} = require("../services/storeService");
 // route base: /api/store
 router.get(
   "/products",
@@ -16,5 +19,11 @@ router.get(
   browseProductsValidator,
   browseProducts,
 );
-
+router.get(
+  "/products/:id",
+  protect,
+  allwodTo("USER"),
+  productDetailValidator, // reuse the id validator or make a new one
+  getProductDetail,
+);
 module.exports = router;

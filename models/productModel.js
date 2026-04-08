@@ -11,7 +11,7 @@ const Product = sequelize.define(
       primaryKey: true,
       allowNull: false,
     },
-    title: {
+    name: {
       type: DataTypes.STRING(100),
       allowNull: false,
     },
@@ -32,15 +32,9 @@ const Product = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: false,
     },
-    ratingsAverage: {
-      type: DataTypes.FLOAT,
-      allowNull: true,
-      defaultValue: null,
-    },
-    ratingsQuantity: {
+    preparingTime: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 0,
     },
     restaurantProfileId: {
       type: DataTypes.UUID,
@@ -56,8 +50,8 @@ const Product = sequelize.define(
     timestamps: true,
     hooks: {
       beforeSave: (product) => {
-        if (product.changed("title")) {
-          product.slug = slugify(product.title, { lower: true, strict: true });
+        if (product.changed("name")) {
+          product.slug = slugify(product.name, { lower: true, strict: true });
         }
       },
     },

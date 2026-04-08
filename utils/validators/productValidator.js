@@ -36,11 +36,11 @@ const categoryValidator = (isRequired) => {
 };
 
 exports.createProductValidator = [
-  check("title")
+  check("name")
     .notEmpty()
-    .withMessage("Title is required")
+    .withMessage("name is required")
     .isLength({ max: 100 })
-    .withMessage("Title cannot exceed 100 characters"),
+    .withMessage("name cannot exceed 100 characters"),
 
   check("description").notEmpty().withMessage("Description is required"),
 
@@ -49,6 +49,11 @@ exports.createProductValidator = [
     .withMessage("Price is required")
     .isFloat({ min: 0 })
     .withMessage("Price must be a positive number"),
+  check("preparingTime")
+    .notEmpty()
+    .withMessage("Preparing time is required")
+    .isInt({ min: 1 })
+    .withMessage("Preparing time must be a positive integer (in minutes)"),
 
   categoryValidator(true),
 
@@ -63,7 +68,7 @@ exports.createProductValidator = [
 exports.updateProductValidator = [
   param("id").isUUID(4).withMessage("Invalid product ID"),
 
-  check("title")
+  check("name")
     .optional()
     .isLength({ max: 100 })
     .withMessage("Title cannot exceed 100 characters"),
@@ -74,6 +79,10 @@ exports.updateProductValidator = [
     .optional()
     .isFloat({ min: 0 })
     .withMessage("Price must be a positive number"),
+  check("preparingTime")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Preparing time must be a positive integer (in minutes)"),
 
   categoryValidator(false),
 
