@@ -13,8 +13,8 @@ const ALLOWED_CATEGORIES = [
 const ALLOWED_SORTS = [
   "price_desc",
   "price_asc",
-  "preparationTime_asc",
-  "preparationTime_desc",
+  "preparation_asc",
+  "preparation_desc",
 ];
 
 exports.browseProductsValidator = [

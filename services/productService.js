@@ -52,24 +52,21 @@ exports.getOneProduct = asyncHandler(async (req, res, next) => {
     errors: null,
   });
 });
-
-// @desc   Create a new product
-// @route  POST /api/restaurant/products
-// @access RESTAURANT
 exports.createProduct = asyncHandler(async (req, res, next) => {
   const profile = await getRestaurantProfile(req.authenticatedUser.id, next);
   if (!profile) return;
 
-  const { title, description, price, category } = req.body;
+  const { name, description, price, category, preparingTime } = req.body;
 
   const imageFile = req.files?.image?.[0];
   const image = `/uploads/images/${imageFile.filename}`;
 
   const product = await Product.create({
-    title,
+    name,
     description,
     price,
     image,
+    preparingTime,
     category: typeof category === "string" ? JSON.parse(category) : category,
     restaurantProfileId: profile.id,
   });
@@ -82,9 +79,6 @@ exports.createProduct = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc   Update a product (own store only)
-// @route  PATCH /api/restaurant/products/:id
-// @access RESTAURANT
 exports.updateProduct = asyncHandler(async (req, res, next) => {
   const profile = await getRestaurantProfile(req.authenticatedUser.id, next);
   if (!profile) return;
@@ -95,11 +89,12 @@ exports.updateProduct = asyncHandler(async (req, res, next) => {
 
   if (!product) return next(new ApiError("Product not found", 404));
 
-  const { title, description, price, category } = req.body;
+  const { name, description, price, category, preparingTime } = req.body;
 
-  if (title !== undefined) product.title = title;
+  if (name !== undefined) product.name = name;
   if (description !== undefined) product.description = description;
   if (price !== undefined) product.price = price;
+  if (preparingTime !== undefined) product.preparingTime = preparingTime;
   if (category !== undefined) {
     product.category =
       typeof category === "string" ? JSON.parse(category) : category;

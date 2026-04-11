@@ -17,6 +17,7 @@ const viewProfileRouter = require("./routes/viewProfileRoute");
 const postRoutes = require("./routes/postRoutes");
 const productRoutes = require("./routes/productRoute");
 const storeRoutes = require("./routes/storeRoute");
+const cartRoutes = require("./routes/cartRoute");
 
 const app = express();
 
@@ -49,7 +50,7 @@ app.use("/api/profile", viewProfileRouter);
 app.use("/api/posts", postRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/store", storeRoutes);
-
+app.use("/api/cart", cartRoutes);
 app.all("*", (req, res, next) => {
   next(new ApiError(`Can't find this route: ${req.originalUrl}`, 400));
 });
