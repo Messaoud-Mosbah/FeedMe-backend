@@ -11,12 +11,12 @@ const SORT_OPTIONS = {
     ["price", "ASC"],
     ["createdAt", "DESC"],
   ],
-  preparation_desc: [
-    ["preparingTime", "DESC"],
-    ["createdAt", "DESC"],
-  ],
   preparation_asc: [
     ["preparingTime", "ASC"],
+    ["createdAt", "DESC"],
+  ],
+  preparation_desc: [
+    ["preparingTime", "DESC"],
     ["createdAt", "DESC"],
   ],
 };

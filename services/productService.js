@@ -52,10 +52,6 @@ exports.getOneProduct = asyncHandler(async (req, res, next) => {
     errors: null,
   });
 });
-
-// @desc   Create a new product
-// @route  POST /api/restaurant/products
-// @access RESTAURANT
 exports.createProduct = asyncHandler(async (req, res, next) => {
   const profile = await getRestaurantProfile(req.authenticatedUser.id, next);
   if (!profile) return;
