@@ -59,7 +59,7 @@ exports.createProduct = asyncHandler(async (req, res, next) => {
   const { name, description, price, category, preparingTime } = req.body;
 
   const imageFile = req.files?.image?.[0];
-  const image = /uploads/images/${imageFile.filename};
+  const image = `/uploads/images/${imageFile.filename}`;
 
   const product = await Product.create({
     name,
@@ -102,7 +102,7 @@ exports.updateProduct = asyncHandler(async (req, res, next) => {
 
   const imageFile = req.files?.image?.[0];
   if (imageFile) {
-    product.image = /uploads/images/${imageFile.filename};
+    product.image = `/uploads/images/${imageFile.filename}`;
   }
 
   await product.save();
@@ -114,6 +114,7 @@ exports.updateProduct = asyncHandler(async (req, res, next) => {
     errors: null,
   });
 });
+
 // @desc   Delete a product (own store only)
 // @route  DELETE /api/restaurant/products/:id
 // @access RESTAURANT

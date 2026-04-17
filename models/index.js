@@ -10,6 +10,7 @@ const Post = require("./postModel");
 const PostMedia = require("./PostMedia");
 const Product = require("./productModel");
 const CartItem = require("./cartModel");
+const Order = require("./orderModel");
 if (
   !User ||
   !UserProfile ||
@@ -17,7 +18,8 @@ if (
   !Post ||
   !PostMedia ||
   !Product ||
-  !CartItem
+  !CartItem ||
+  !Order
 ) {
   console.error("تعذر تحميل أحد الموديلات، تأكد من مسارات الملفات!");
 }
@@ -103,7 +105,32 @@ CartItem.belongsTo(RestaurantProfile, {
   foreignKey: "restaurantProfileId",
   as: "restaurant",
 });
+// User <=> Order
+User.hasMany(Order, {
+  foreignKey: { name: "userId", type: DataTypes.UUID },
+  onDelete: "CASCADE",
+});
+Order.belongsTo(User, { foreignKey: "userId" });
 
+// RestaurantProfile <=> Order
+RestaurantProfile.hasMany(Order, {
+  foreignKey: { name: "restaurantProfileId", type: DataTypes.UUID },
+  onDelete: "CASCADE",
+});
+Order.belongsTo(RestaurantProfile, {
+  foreignKey: "restaurantProfileId",
+  as: "restaurant",
+});
+
+// Product <=> Order
+Product.hasMany(Order, {
+  foreignKey: { name: "productId", type: DataTypes.UUID },
+  onDelete: "SET NULL",
+});
+Order.belongsTo(Product, {
+  foreignKey: "productId",
+  as: "product",
+});
 module.exports = {
   sequelize,
   User,
@@ -113,4 +140,5 @@ module.exports = {
   PostMedia,
   Product,
   CartItem,
+  Order,
 };
