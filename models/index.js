@@ -11,6 +11,7 @@ const PostMedia = require("./PostMedia");
 const Product = require("./productModel");
 const CartItem = require("./cartModel");
 const Order = require("./orderModel");
+const OrderItem = require("./orderItemModel");
 if (
   !User ||
   !UserProfile ||
@@ -19,7 +20,8 @@ if (
   !PostMedia ||
   !Product ||
   !CartItem ||
-  !Order
+  !Order ||
+  !OrderItem
 ) {
   console.error("تعذر تحميل أحد الموديلات، تأكد من مسارات الملفات!");
 }
@@ -122,12 +124,20 @@ Order.belongsTo(RestaurantProfile, {
   as: "restaurant",
 });
 
-// Product <=> Order
-Product.hasMany(Order, {
+// Order <=> OrderItem
+Order.hasMany(OrderItem, {
+  foreignKey: { name: "orderId", type: DataTypes.UUID },
+  onDelete: "CASCADE",
+  as: "items",
+});
+OrderItem.belongsTo(Order, { foreignKey: "orderId" });
+
+// Product <=> OrderItem
+Product.hasMany(OrderItem, {
   foreignKey: { name: "productId", type: DataTypes.UUID },
   onDelete: "SET NULL",
 });
-Order.belongsTo(Product, {
+OrderItem.belongsTo(Product, {
   foreignKey: "productId",
   as: "product",
 });
@@ -141,4 +151,5 @@ module.exports = {
   Product,
   CartItem,
   Order,
+  OrderItem,
 };

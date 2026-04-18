@@ -31,19 +31,44 @@ exports.getCart = asyncHandler(async (req, res, next) => {
     order: [["createdAt", "DESC"]],
   });
 
-  const items = cartItems.map((item) => ({
-    ...item.toJSON(),
-    totalPrice: (item.Product.price * item.quantity).toFixed(2),
-  }));
+  // group by restaurant
+  const grouped = {};
 
-  const cartTotal = items
-    .reduce((sum, item) => sum + parseFloat(item.totalPrice), 0)
+  cartItems.forEach((item) => {
+    const restaurantId = item.restaurantProfileId;
+
+    if (!grouped[restaurantId]) {
+      grouped[restaurantId] = {
+        restaurant: item.restaurant,
+        items: [],
+        restaurantTotal: 0,
+      };
+    }
+
+    const totalPrice = (item.Product.price * item.quantity).toFixed(2);
+
+    grouped[restaurantId].items.push({
+      cartItemId: item.id,
+      product: item.Product,
+      quantity: item.quantity,
+      totalPrice,
+    });
+
+    grouped[restaurantId].restaurantTotal = (
+      parseFloat(grouped[restaurantId].restaurantTotal) + parseFloat(totalPrice)
+    ).toFixed(2);
+  });
+
+  const restaurants = Object.values(grouped);
+
+  const cartTotal = restaurants
+    .reduce((sum, r) => sum + parseFloat(r.restaurantTotal), 0)
     .toFixed(2);
 
   res.status(200).json({
     status: "SUCCESS",
     message: "Cart fetched successfully",
-    data: { results: items.length, cartTotal, items },
+    data: { results: restaurants.length, cartTotal, restaurants },
     errors: null,
   });
 });
@@ -72,7 +97,6 @@ exports.addToCart = asyncHandler(async (req, res, next) => {
     });
   }
 
-  // not in cart yet → create
   const cartItem = await CartItem.create({
     userId,
     productId,

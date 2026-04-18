@@ -1,8 +1,8 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/database");
 
-const Order = sequelize.define(
-  "Order",
+const OrderItem = sequelize.define(
+  "OrderItem",
   {
     id: {
       type: DataTypes.UUID,
@@ -10,24 +10,23 @@ const Order = sequelize.define(
       primaryKey: true,
       allowNull: false,
     },
-    userId: {
+    orderId: {
       type: DataTypes.UUID,
       allowNull: false,
     },
-    restaurantProfileId: {
+    productId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
     },
-    status: {
-      type: DataTypes.ENUM("PENDING", "ACCEPTED"),
+    quantity: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: "PENDING",
     },
   },
   {
-    tableName: "orders",
+    tableName: "order_items",
     timestamps: true,
   },
 );
 
-module.exports = Order;
+module.exports = OrderItem;

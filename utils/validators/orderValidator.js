@@ -2,11 +2,12 @@ const { check, param } = require("express-validator");
 const validatorMiddleware = require("../../middlewares/validatorMiddleware");
 
 exports.placeOrderValidator = [
-  check("cartItemId")
+  check("restaurantProfileId")
     .notEmpty()
-    .withMessage("Cart item ID is required")
+    .withMessage("Restaurant ID is required")
     .isUUID(4)
-    .withMessage("Invalid cart item ID"),
+    .withMessage("Invalid restaurant ID"),
+
   validatorMiddleware,
 ];
 
