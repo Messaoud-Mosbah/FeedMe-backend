@@ -1,83 +1,11 @@
 const { Post, PostMedia, User, UserProfile } = require('../models')
 const ApiError = require('../utils/apiError')
 const asyncHandler = require('express-async-handler')
-const { Op } = require("sequelize"); //operations  for sequelize : lt,gt,...
+const { Op } = require("sequelize");
+const {sequelize} = require("../config/database");
 
 
 
-
-// ── CREATE ────────────────────────────
-/**note : 
- * req.files and req.body yjou mn multer middleware in routes
- * 
-console.log("Images:", images);
-console.log("Video:", video);
-
-لو رفع المستخدم صور فقط:
-
-Images: [
-  { fieldname: 'images', originalname: 'pizza.jpg', filename: '1719950200000-482938292.png', ... },
-  { fieldname: 'images', originalname: 'burger.jpg', filename: '1719950200001-123456789.png', ... }
-]
-Video: undefined
-
-لو رفع فيديو فقط:
-
-Images: []
-Video: { fieldname: 'video', originalname: 'reel.mp4', filename: '1719950200002-987654321.mp4', ... }
-
-لو لم يرفع أي ملف:
-
-Images: []
-Video: undefined
- */
-
-/**console.log(req.files);
- * 1️⃣ لو رفع المستخدم صور فقط
-{
-  images: [
-    {
-      fieldname: 'images',
-      originalname: 'pizza.jpg',
-      encoding: '7bit',
-      mimetype: 'image/jpeg',
-      destination: 'uploads/images',
-      filename: '1719950200000-482938292.png',
-      path: 'uploads/images/1719950200000-482938292.png',
-      size: 34567
-    },
-    {
-      fieldname: 'images',
-      originalname: 'burger.jpg',
-      encoding: '7bit',
-      mimetype: 'image/jpeg',
-      destination: 'uploads/images',
-      filename: '1719950200001-123456789.png',
-      path: 'uploads/images/1719950200001-123456789.png',
-      size: 28945
-    }
-  ]
-}
-2️⃣ لو رفع الفيديو فقط
-{
-  video: [
-    {
-      fieldname: 'video',
-      originalname: 'reel.mp4',
-      encoding: '7bit',
-      mimetype: 'video/mp4',
-      destination: 'uploads/videos',
-      filename: '1719950200002-987654321.mp4',
-      path: 'uploads/videos/1719950200002-987654321.mp4',
-      size: 2456789
-    }
-  ]
-}
-3️⃣ لو ما رفع حتى ملف
-{}
-
-
- */
 
 
 const createPost = asyncHandler(async (req, res, next) => {
@@ -90,12 +18,13 @@ if(images.length > 0) mediaTypeValue = 'IMAGE';
 else if(video) mediaTypeValue = 'VIDEO';
 
 
-  const { caption, contentType/*, mediaType*/ } = req.body
+  const { title ,description, contentType/*, mediaType*/ } = req.body
 
 //create post
   const post = await Post.create({
-    userId:      req.authenticatedUser.id, //= req.user.id 
-    caption,
+    userId:req.authenticatedUser.id, //= req.user.id 
+title,
+description,
     contentType: contentType || 'DISH',
     mediaType: mediaTypeValue,
   //  video:       video ? video.path : null,
@@ -131,15 +60,6 @@ else if(video) mediaTypeValue = 'VIDEO';
   }
 
 
-  // // ─── إذا كان Video  - field───
-  // if (video) {
-
-  //   await post.update({
-  //     videoUrl: `/uploads/videos/${video.filename}`
-  //   })
-  // }
-
-
   res.status(201).json({
     status:  'SUCCESS',
     message: 'Post created successfully',
@@ -154,7 +74,9 @@ else if(video) mediaTypeValue = 'VIDEO';
 // get all posts with cursor pagination
 const getAllPosts = asyncHandler(async (req, res) => {
   const cursor = req.query.cursor ? new Date(req.query.cursor) : null; 
-  const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+  //give me posts that its created time less than cursor
+
+  const limit = req.query.limit ? parseInt(req.query.limit) : 50;
 
   // query posts
   let whereClause = {};
@@ -190,9 +112,11 @@ const getAllPosts = asyncHandler(async (req, res) => {
   res.status(200).json({
     status: "SUCCESS",
     message: "Posts fetched successfully",
-    data: posts,
-    nextCursor,
+    data: {
     results: posts.length,
+    nextCursor,
+
+      posts},
     errors: null,
   });
 });
@@ -205,7 +129,7 @@ const getAllPosts = asyncHandler(async (req, res) => {
 // ── GET MY POSTS (profile) ────────────
 
 const getMyPosts = asyncHandler(async (req, res) => {
-  const userId = req.authenticatedUser.id; // لازم middleware تضع req.user
+  const userId = req.authenticatedUser.id; 
  const cursor = req.query.cursor ? new Date(req.query.cursor) : null; 
   const limit = req.query.limit ? parseInt(req.query.limit) : 10;
 
@@ -242,9 +166,11 @@ const getMyPosts = asyncHandler(async (req, res) => {
   res.status(200).json({
     status: "SUCCESS",
     message: "My posts fetched successfully",
-    data: posts,
-     nextCursor,
+    data: {
     results: posts.length,
+    nextCursor,
+
+      posts},
     errors: null
   });
 });
@@ -267,97 +193,105 @@ const getOnePost = asyncHandler(async (req, res, next) => {
     res.status(200).json({
         status: 'SUCCESS',
         message: 'Post retrieved successfully',
-        data: post,
+        data: {post},
         errors: null
     });
 });
 
 
 // ── UPDATE ────────────────────────────
+const updatePost = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { title, description, contentType, keptMediaIds } = req.body; 
+  const images = req.files?.images || [];
+  const video = req.files?.video?.[0];
 
-const updatePost = asyncHandler(async(req,res,next)=>{
+  const post = await Post.findByPk(id);
+  if (!post) throw new ApiError("Post not found", 404);
+  if (post.userId !== req.authenticatedUser.id) throw new ApiError("Not authorized", 403);
 
-/**تعديل النص (caption, contentType)
-تعديل نوع الميديا
-تبديل الصور/الفيديو كامل */
+  const transaction = await sequelize.transaction();
 
+  try {
+    await post.update({
+      title: title ?? post.title,
+      description: description ?? post.description,
+      contentType: contentType ?? post.contentType,
+    }, { transaction });
 
- const {id} = req.params //postId
+  // 1. تأكد من أن الـ keptIds هي مصفوفة من النصوص (UUIDs)
+const keptIds = keptMediaIds ? JSON.parse(keptMediaIds) : [];
 
- const images = req.files?.images || [] //get images (array of images or empty array if no images) from multer if user uploads images
- const video  = req.files?.video?.[0] //get video (object of video or undefined if no video) from multer if user uploads video
+// 2. استخدام التعديل التالي لتجنب مشاكل MySQL مع UUID
+await PostMedia.destroy({
+  where: {
+    postId: post.id,
+    id: { 
+      [Op.notIn]: keptIds.length > 0 ? keptIds : ['NULL_PLACEHOLDER'] 
+    }
+  },
+  transaction
+});
 
- const {caption,contentType} = req.body //get new info
+    const mediaData = [];
+    images.forEach((img, index) => {
+      mediaData.push({ 
+        postId: post.id, 
+        type: "IMAGE", 
+        url: `/uploads/images/${img.filename}`, 
+        order: keptIds.length + index 
+      });
+    });
 
- const post = await Post.findByPk(id) //find post by id
+    if (video) {
+      mediaData.push({ 
+        postId: post.id, 
+        type: "VIDEO", 
+        url: `/uploads/videos/${video.filename}`, 
+        order: 0 
+      });
+    }
 
- if(!post){
-   throw new ApiError("Post not found",404)
- }
+    if (mediaData.length > 0) {
+      await PostMedia.bulkCreate(mediaData, { transaction });
+    }
 
- if(post.userId !== req.user.id){ //the user is the own of post??
-   throw new ApiError("Not authorized",403)
- }
+const remainingImagesCount = await PostMedia.count({ 
+  where: { 
+    postId: post.id, 
+    type: 'IMAGE' 
+  }, 
+  transaction 
+});
 
- let mediaTypeValue = post.mediaType
+const remainingVideosCount = await PostMedia.count({ 
+  where: { 
+    postId: post.id, 
+    type: 'VIDEO' 
+  }, 
+  transaction 
+});    
+let newMediaType = "NONE";
 
- if(images.length > 0) mediaTypeValue = "IMAGE"
- else if(video) mediaTypeValue = "VIDEO"
+if (remainingImagesCount > 0 ) {
+    newMediaType = "IMAGE";
 
- await post.update({
-   caption: caption ?? post.caption,
-   contentType: contentType ?? post.contentType,
-   mediaType: mediaTypeValue
- })
+} else if (remainingVideosCount > 0) {
+    newMediaType = "VIDEO";
+}else{
+      newMediaType = "NONE";
+}
 
- if(images.length > 0 || video){
+await post.update({ mediaType: newMediaType }, { transaction });
+    await transaction.commit();
 
-   await Media.destroy({ //delete old media if exist
-     where:{postId:post.id}
-   })
-   
-   /**DELETE FROM media
-WHERE postId = post.id */
+    res.status(200).json({ status: "SUCCESS", message: "Post updated successfully", data: { post } });
 
-   const mediaData = []
-
-   if(images.length > 0){
- 
-     images.forEach((img,index)=>{ //loop on images to create mediaData array to insert in database
-       mediaData.push({
-         postId:post.id,
-         type:"IMAGE",
-         url:`/uploads/images/${img.filename}`,
-         order:index
-       })
-     })
-
-   }
-
-   if(video){
-
-     mediaData.push({
-       postId:post.id,
-       type:"VIDEO",
-       url:`/uploads/videos/${video.filename}`,
-       order:0
-     })
-
-   }
-
-   await PostMedia.bulkCreate(mediaData)
-
- }
-
- res.status(200).json({
-   status:"SUCCESS",
-   message:"Post updated successfully",
-   data:{post},
-   errors:null
- })
-
-})
-
+  } catch (error) {
+    await transaction.rollback();
+    next(error);
+  }
+});
 
 // ── DELETE ────────────────────────────
 
@@ -380,7 +314,7 @@ const deletePost = asyncHandler(async (req, res, next) => {
 // ── PIN TOGGLE ────────────────────────
 const togglePin = asyncHandler(async (req, res, next) => {
   const post = await Post.findOne({
-    where: { id: req.params.postId, userId: req.user.id }
+    where: { id: req.params.id, userId: req.authenticatedUser.id }
   })
 
   if (!post) throw new ApiError('Post not found or not yours', 404)
@@ -388,7 +322,7 @@ const togglePin = asyncHandler(async (req, res, next) => {
   if (post.isPinned) {
     post.isPinned = false
   } else {
-    await Post.update({ isPinned: false }, { where: { userId: req.user.id } })
+    await Post.update({ isPinned: false }, { where: { userId: req.authenticatedUser.id } })
     post.isPinned = true
   }
 
@@ -397,7 +331,7 @@ const togglePin = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     status:  'SUCCESS',
     message: post.isPinned ? 'Post pinned' : 'Post unpinned',
-    data:    { isPinned: post.isPinned }
+    data:    {  post }
   })
 })
 

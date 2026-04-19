@@ -17,7 +17,9 @@ const validateCreatePost = asyncHandler(async (req, res, next) => {
 
   // schema avec caption obligatoire
   const schema = Joi.object({
-    caption: Joi.string().max(255).required(),
+    title: Joi.string().max(255).required(),
+        description: Joi.string().max(255).required(),
+
     contentType: Joi.string()
       .valid('RECIPE', 'DISH')
       .optional(),
@@ -69,40 +71,52 @@ const validateidpost = asyncHandler(async (req, res, next) => {
 
 // ── UPDATE POST VALIDATOR ─────────────────
 const validateUpdatePost = asyncHandler(async (req, res, next) => {
-  const images = req.files?.images || [] //get all images
-  const video  = req.files?.video?.[0]
+  // 1. استخراج الملفات
+  const images = req.files?.images || [];
+  const video = req.files?.video?.[0];
 
-  // erreur si images + video ensemble
+  // 2. التحقق من منطق الملفات (قاعدة العمل)
   if (images.length > 0 && video) {
-    throw new ApiError('Cannot upload images and video together', 400)
+    throw new ApiError('Cannot upload images and video together', 400);
   }
 
+  // 3. تجهيز بيانات الـ Body للتحقق
+  // ملاحظة: بما أن البيانات تأتي عبر FormData، الـ keptMediaIds غالباً ما تكون نص
+  // نحولها لمصفوفة لتسهيل التحقق بـ Joi
+  let keptMediaIds = [];
+  try {
+    if (req.body.keptMediaIds) {
+      keptMediaIds = JSON.parse(req.body.keptMediaIds);
+    }
+  } catch (e) {
+    throw new ApiError('Invalid format for keptMediaIds', 400);
+  }
 
-
-  // schema avec caption obligatoire
+  // 4. تعريف مخطط التحقق (Joi Schema)
   const schema = Joi.object({
-    caption: Joi.string().max(255).optional(),
+    title: Joi.string().max(255).required(),
+    description: Joi.string().max(255).required(),
     contentType: Joi.string()
       .valid('RECIPE', 'DISH', 'POST', 'REEL')
       .optional(),
-    //  mediaType: Joi.string()
-    // .valid('IMAGE', 'VIDEO', 'NONE')
-    //  .required(),
-  })
+    mediaType: Joi.string()
+      .valid('IMAGE', 'VIDEO', 'NONE')
+      .required(),
+    keptMediaIds: Joi.array().optional()
+  });
 
+  // 5. التحقق من البيانات (مع دمج keptMediaIds المحول)
+  const { error } = schema.validate({
+    ...req.body,
+    keptMediaIds 
+  });
 
-  
- 
+  if (error) {
+    throw new ApiError(error.details[0].message, 400);
+  }
 
-  //  Valider le body et vérifier les erreurs
-  const { error } = schema.validate(req.body)
-  if (error) throw new ApiError(error.details[0].message, 400)
-
-
-  next()
- })
-
-
+  next();
+});
 
 
 

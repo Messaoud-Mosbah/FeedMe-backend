@@ -66,5 +66,11 @@ router.patch(
   validateUpdatePost,
   postService.updatePost,
 );
-
+router.get(
+  "/pin/:id",
+  protect,
+  allwodTo("USER", "RESTAURANT", "ADMIN"),
+  
+  postService.togglePin,
+);
 module.exports = router;

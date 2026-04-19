@@ -21,12 +21,12 @@ const PostMedia = sequelize.define(
     order: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 0, // ordre d'affichage a l interieur de post
+      defaultValue: 0, 
     },
     postId: {
       type: DataTypes.UUID,
       allowNull: false,
-      // pas de references ici → c'est dans migration + index.js
+     
     },
   },
   {

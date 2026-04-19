@@ -10,7 +10,11 @@ const Post = sequelize.define(
       primaryKey: true,
       allowNull: false,
     },
-    caption: {
+  title: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+     description: {
       type: DataTypes.STRING(255),
       allowNull: false,
     },
@@ -34,23 +38,22 @@ const Post = sequelize.define(
     },
     likeCount: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       defaultValue: 0,
     },
     commentCount: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       defaultValue: 0,
     },
     userId: {
       type: DataTypes.UUID,
       allowNull: false,
-      // pas de references ici → c'est dans migration + index.js
     },
   },
   {
     tableName: "posts",
-    timestamps: true, // Sequelize gère createdAt et updatedAt
+    timestamps: true,
   }
 );
 

@@ -8,13 +8,17 @@ module.exports = {
         primaryKey: true,
         allowNull: false
       },
-      caption: {
+      title: {
+        type: Sequelize.STRING(255),
+        allowNull: false
+      },
+       description: {
         type: Sequelize.STRING(255),
         allowNull: false
       },
      
       video: {
-        type: Sequelize.STRING(255), //path of video
+        type: Sequelize.STRING(255), 
         allowNull: true
       },
         contentType: {
@@ -43,7 +47,7 @@ module.exports = {
       },
       createdAt: {
         allowNull: false,
-        type: Sequelize.DATE, //pour trier les posts selon la date de creation
+        type: Sequelize.DATE, 
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
       updatedAt: {
@@ -51,15 +55,15 @@ module.exports = {
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
-      userId: { //Foreign Key/ ce tableau depend de user table 
+      userId: { 
         type: Sequelize.UUID,
         allowNull: false,
         references: {
           model: 'users',
           key: 'id'
         },
-        onUpdate: 'CASCADE',//change user id -> change this FK also in table posts
-        onDelete: 'CASCADE' //delete user -> delete all posts of this user
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE' 
       }
    
     });
