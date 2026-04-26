@@ -25,7 +25,7 @@ router.post("/", createUserValidator, createUser);
 
 router.get("/", getAllUsers);
 
-router.get("/get-user-by-identifier", ...getUserByIdentifierValidator, getUserByIdentifier);
+router.get("/get-by-identifier", ...getUserByIdentifierValidator, getUserByIdentifier);
 
 router.get("/:id",getUserValidator, getUser);
 

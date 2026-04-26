@@ -2,8 +2,9 @@ const { check, param ,  query} = require("express-validator");
 const User = require("../../models/userModel");
 const validatorMiddleware = require("../../middlewares/validatorMiddleware");
 
-// CREATE USER VALIDATOR
 
+//--------1--------
+// CREATE USER VALIDATOR
 exports.createUserValidator = [
   check("userName")
     .trim()
@@ -56,14 +57,16 @@ exports.createUserValidator = [
   validatorMiddleware,
 ];
 
-
-// GET
+//-------------2----------
+// get user validator
 exports.getUserValidator = [
   param("id").isUUID(4).withMessage("Invalid user ID format"),
   validatorMiddleware,
 ];
 
-// get USER by identifier
+
+//-----------3----------
+// get USER by identifier validtor
 exports.getUserByIdentifierValidator = [
  query("identifier")
   .trim()
@@ -81,13 +84,16 @@ exports.getUserByIdentifierValidator = [
   }),
   validatorMiddleware,
 ]; 
-// DELETE a user
+
+//----------------4-----------
+// DELETE a user by id
 exports.deleteUserValidator = [
   param("id").isUUID(4).withMessage("Invalid user ID format"),
   validatorMiddleware,
 ];
-// UPDATE USER VALIDATOR
 
+//---------------5---------
+// UPDATE USER VALIDATOR
 exports.updateUserValidator = [
   param("id").isUUID(4).withMessage("Invalid user ID format"),
 
@@ -119,6 +125,7 @@ exports.updateUserValidator = [
   validatorMiddleware,
 ];
 
+//-------------6----------
 // CHANGE PASSWORD
 exports.changeUserPasswordValidator = [
   param("id").isUUID(4).withMessage("Invalid user ID format"),

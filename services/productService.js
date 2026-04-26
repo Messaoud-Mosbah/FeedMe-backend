@@ -12,10 +12,13 @@ const getRestaurantProfile = async (userId, next) => {
   return profile;
 };
 
+
+//--------1---------
 // @desc   Get all products of the logged-in restaurant
 // @route  GET /api/restaurant/products
 // @access RESTAURANT
 exports.getAllProducts = asyncHandler(async (req, res, next) => {
+  
   const profile = await getRestaurantProfile(req.authenticatedUser.id, next);
   if (!profile) return;
 
@@ -32,8 +35,9 @@ exports.getAllProducts = asyncHandler(async (req, res, next) => {
   });
 });
 
+//----------2-----------
 // @desc   Get single product (own store only)
-// @route  GET /api/restaurant/products/:id
+// @route  GET /api/products/:id
 // @access RESTAURANT
 exports.getOneProduct = asyncHandler(async (req, res, next) => {
   const profile = await getRestaurantProfile(req.authenticatedUser.id, next);
@@ -52,6 +56,11 @@ exports.getOneProduct = asyncHandler(async (req, res, next) => {
     errors: null,
   });
 });
+
+//------------3-----------
+//des       create a product
+//route      post /api/products/
+//access     restaurant
 exports.createProduct = asyncHandler(async (req, res, next) => {
   const profile = await getRestaurantProfile(req.authenticatedUser.id, next);
   if (!profile) return;
@@ -78,6 +87,12 @@ exports.createProduct = asyncHandler(async (req, res, next) => {
     errors: null,
   });
 });
+
+
+//------------4-----------
+//des       update a product
+//route      patch /api/products/:id
+//access     restaurant
 
 exports.updateProduct = asyncHandler(async (req, res, next) => {
   const profile = await getRestaurantProfile(req.authenticatedUser.id, next);
@@ -115,8 +130,10 @@ exports.updateProduct = asyncHandler(async (req, res, next) => {
   });
 });
 
+//------------5-----------
+
 // @desc   Delete a product (own store only)
-// @route  DELETE /api/restaurant/products/:id
+// @route  DELETE /api/products/:id
 // @access RESTAURANT
 exports.deleteProduct = asyncHandler(async (req, res, next) => {
   const profile = await getRestaurantProfile(req.authenticatedUser.id, next);

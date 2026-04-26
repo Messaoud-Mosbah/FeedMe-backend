@@ -4,16 +4,9 @@ const ApiError = require("../utils/apiError");
 const { Op } = require("sequelize");
 const { sendVerificationEmail } = require("./authService");
 const { GENERATE_TOKEN } = require('../utils/createToken');
-
-
-
 const { User, UserProfile, RestaurantProfile } = require("../models/index");
-const userAttributes = [
-  'id', 'userName', 'email', 'role', 'status', 
-  'isVerified', 'createdAt', 'isLoggedOut', 
-  'isOnboardingCompleted',  "pendingEmail"
-, 'updatedAt', "slug"
-];
+
+//-------1------
 //des       create a user
 //route      post /api/users/
 //access     ADMIN
@@ -26,20 +19,23 @@ exports.createUser = asyncHandler(async (req, res) => {
     role: role || "user",
   });
    const jwtToken = await GENERATE_TOKEN({ 
-        email: user.email, 
         id: user.id, 
+        email: user.email, 
         userName: user.userName 
     });
-await sendVerificationEmail(user); 
 user.password = undefined;
 res.status(201).json({ 
     status: 'SUCCESS', 
     message: "User created successfully. Verification email sent.",
-    data: { user,jwtToken },
+    data: { 
+      user,
+      jwtToken
+     },
     errors: null 
   });
 });
-
+ 
+//-----------2----------
 //des       GET ALL USERS
 //route      GET /api/users/
 //access     ADMIN
@@ -49,7 +45,6 @@ exports.getAllUsers = asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit) || 10 ;      
   const offset = (page - 1) * limit;                
   const { count, rows: users } = await User.findAndCountAll({
-attributes: userAttributes,
   include: [UserProfile, RestaurantProfile],
     limit: limit,
     offset: offset,
@@ -64,28 +59,28 @@ attributes: userAttributes,
     message: "list of users",
     data:{
     results: users.length,       
-    totalCount: count,            
-    pagination: {
-      currentPage: page,
-      limit: limit,
-      totalPages: totalPages,
-      remainingPages: Math.max(0, remainingPages),
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
-          users,
-    },
+      users,
+           
+    // pagination: {
+    //   currentPage: page,
+    //   limit: limit,
+    //   totalPages: totalPages,
+    //   remainingPages: Math.max(0, remainingPages),
+    //   hasNextPage: page < totalPages,
+    //   hasPrevPage: page > 1,
+          
+    // },
     } ,
     errors:null
   });
 });
 
-
+//------------3-----------
 //des       get single user by id
 //route      get /api/users/:id
 //access     ADMIN
 exports.getUser = asyncHandler(async (req, res, next) => {
   const user = await User.findByPk(req.params.id, {
-    attributes: userAttributes,
     include: [UserProfile, RestaurantProfile],
   });
   if (!user)
@@ -98,9 +93,9 @@ res.status(200).json({
     errors:null 
   });});
 
-
-//des       GET USER BY IDENTIFIER (email or username)//req.query (params)
-//route      get /api/users/get-user-by-identifier
+//------------4-----------
+//des       GET USER BY IDENTIFIER (email or userName)//req.query (params)
+//route      get /api/users/get-by-identifier
 //access     ADMIN
 exports.getUserByIdentifier = asyncHandler(async (req, res, next) => {
   const { identifier } = req.query;
@@ -108,7 +103,6 @@ exports.getUserByIdentifier = asyncHandler(async (req, res, next) => {
     where: {
       [Op.or]: [{ email: identifier }, { userName: identifier }],
     },
-    attributes: userAttributes,
     include: [UserProfile, RestaurantProfile],  });
   if (!user) return next(new ApiError(`No user found for: ${identifier}`, 404));
       user.password = undefined;
@@ -119,14 +113,12 @@ res.status(200).json({
     errors:null 
   })});
 
-
-//des        UPDATE USER BY id 
+//------------5--------
+//des        UPDATE USER 
 //route      patch/api/users/:id
 //access     ADMIN
 exports.updateUser = asyncHandler(async (req, res, next) => {
   const user = await User.findByPk(req.params.id,{
-    attributes: userAttributes,
-    include: [UserProfile, RestaurantProfile],
   });
   if (!user)
     return next(new ApiError(`No user found for this  id ${req.params.id}`, 404));
@@ -143,7 +135,7 @@ res.status(200).json({
   })
 });
 
-
+//---------6-------------
   //des     DELETE USER BY id 
 //route      delete /api/users/:id
 //access     ADMIN
@@ -158,7 +150,7 @@ res.status(200)
 });
 
 
-
+//-------------------7-----------------
   //des    CHANGE PASSWORD USER BY id 
 //route      put /api/users/:id
 //access     ADMIN
@@ -166,7 +158,6 @@ res.status(200)
 exports.changeUserPassword = asyncHandler(async (req, res, next) => {
   const user = await User.findByPk(req.params.id,{
     attributes: userAttributes,
-    include: [UserProfile, RestaurantProfile],
   
   });
   if (!user)

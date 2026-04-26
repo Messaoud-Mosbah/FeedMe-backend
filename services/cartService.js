@@ -1,10 +1,19 @@
 const asyncHandler = require("express-async-handler");
 const ApiError = require("../utils/apiError");
-const { CartItem, Product, RestaurantProfile } = require("../models");
+const { CartItem, Product,User, RestaurantProfile } = require("../models");
 
-// @desc   Get cart of logged-in user
-// @route  GET /api/cart
-// @access USER
+const SERVER_BASE_URL = "http://localhost:8000";
+
+const formatImageUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  const cleanPath = path.startsWith("/") ? path.substring(1) : path;
+  return `${SERVER_BASE_URL}/${cleanPath}`;
+};
+
+//-------------1------------
+// @desc    Get cart of logged-in user
+// @route   GET /api/cart
 exports.getCart = asyncHandler(async (req, res, next) => {
   const userId = req.authenticatedUser.id;
 
@@ -13,69 +22,73 @@ exports.getCart = asyncHandler(async (req, res, next) => {
     include: [
       {
         model: Product,
-        attributes: [
-          "id",
-          "name",
-          "image",
-          "price",
-          "preparingTime",
-          "description",
+        include: [
+          {
+            model: RestaurantProfile,
+            as: "restaurant",
+            attributes: ["id", "restaurantName", "restaurantLogoUrl"],
+            include: [{ model: User, attributes: ["userName"] }],
+          },
         ],
       },
-      {
-        model: RestaurantProfile,
-        as: "restaurant",
-        attributes: ["id", "restaurantName", "restaurantLogoUrl"],
-      },
     ],
-    order: [["createdAt", "DESC"]],
   });
 
-  // group by restaurant
   const grouped = {};
 
   cartItems.forEach((item) => {
-    const restaurantId = item.restaurantProfileId;
+    const product = item.Product;
+    if (!product) return;
+
+    const restaurantId = product.restaurantProfileId;
+    const restaurantData = product.restaurant;
+    const userData = restaurantData?.User; 
 
     if (!grouped[restaurantId]) {
       grouped[restaurantId] = {
-        restaurant: item.restaurant,
+        accountId: restaurantId,
+        accountName: restaurantData?.restaurantName || "Unknown Restaurant",
+        userName: userData?.userName || "unknown_user",
+        accountAvatar: formatImageUrl(restaurantData?.restaurantLogoUrl) || "/default-avatar.png",
         items: [],
         restaurantTotal: 0,
       };
     }
 
-    const totalPrice = (item.Product.price * item.quantity).toFixed(2);
+    const price = parseFloat(product.price) || 0;
+    const quantity = parseInt(item.quantity) || 0;
+    const totalPrice = price * quantity;
 
     grouped[restaurantId].items.push({
-      cartItemId: item.id,
-      product: item.Product,
-      quantity: item.quantity,
-      totalPrice,
+      id: product.id,
+      productName: product.name,
+      price: price,
+      description: product.description,
+      // استخدام الدالة هنا
+      image: formatImageUrl(product.image),
+      qty: quantity,
+      accountId: restaurantId,
+      userId:userId
     });
 
-    grouped[restaurantId].restaurantTotal = (
-      parseFloat(grouped[restaurantId].restaurantTotal) + parseFloat(totalPrice)
-    ).toFixed(2);
+    const currentTotal = parseFloat(grouped[restaurantId].restaurantTotal);
+    grouped[restaurantId].restaurantTotal = (currentTotal + totalPrice).toFixed(2);
   });
 
-  const restaurants = Object.values(grouped);
-
-  const cartTotal = restaurants
-    .reduce((sum, r) => sum + parseFloat(r.restaurantTotal), 0)
-    .toFixed(2);
+  const allCartGroups = Object.values(grouped);
 
   res.status(200).json({
     status: "SUCCESS",
     message: "Cart fetched successfully",
-    data: { results: restaurants.length, cartTotal, restaurants },
+    data: { allCartGroups },
     errors: null,
   });
 });
 
-// @desc   Add item to cart
-// @route  POST /api/cart
-// @access USER
+//---------------2--------------
+// @desc    Add item to cart
+// @route   POST /api/cart
+// @access  USER
 exports.addToCart = asyncHandler(async (req, res, next) => {
   const userId = req.authenticatedUser.id;
   const { productId } = req.body;
@@ -83,7 +96,6 @@ exports.addToCart = asyncHandler(async (req, res, next) => {
   const product = await Product.findByPk(productId);
   if (!product) return next(new ApiError("Product not found", 404));
 
-  // check if already in cart
   const existing = await CartItem.findOne({ where: { userId, productId } });
 
   if (existing) {
@@ -112,16 +124,23 @@ exports.addToCart = asyncHandler(async (req, res, next) => {
   });
 });
 
+//---------------3--------------
 // @desc   Update cart item quantity
 // @route  PATCH /api/cart/:itemId
 // @access USER
 exports.updateCartItem = asyncHandler(async (req, res, next) => {
   const userId = req.authenticatedUser.id;
-  const { quantity } = req.body;
+  const { quantity} = req.body;
+  const {itemId }=req.params;
+  if (!itemId) {
+}
 
-  const cartItem = await CartItem.findOne({
-    where: { id: req.params.itemId, userId },
-  });
+ const cartItem = await CartItem.findOne({
+  where: { 
+    productId:itemId,
+    userId: userId
+  },
+});
   if (!cartItem) return next(new ApiError("Cart item not found", 404));
 
   cartItem.quantity = quantity;
@@ -135,6 +154,7 @@ exports.updateCartItem = asyncHandler(async (req, res, next) => {
   });
 });
 
+//----------------4------------
 // @desc   Remove one item from cart
 // @route  DELETE /api/cart/:itemId
 // @access USER
@@ -142,7 +162,7 @@ exports.removeCartItem = asyncHandler(async (req, res, next) => {
   const userId = req.authenticatedUser.id;
 
   const cartItem = await CartItem.findOne({
-    where: { id: req.params.itemId, userId },
+    where: { productId: req.params.itemId, userId },
   });
   if (!cartItem) return next(new ApiError("Cart item not found", 404));
 
@@ -156,6 +176,8 @@ exports.removeCartItem = asyncHandler(async (req, res, next) => {
   });
 });
 
+
+//-------------------5-------------
 // @desc   Clear entire cart
 // @route  DELETE /api/cart
 // @access USER

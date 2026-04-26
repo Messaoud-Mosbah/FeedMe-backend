@@ -8,22 +8,9 @@ const crypto = require("crypto");
 const { sendEmail } = require("../utils/sendEmail");
 const jwt = require("jsonwebtoken");
 
-const userAttributes = [
-  "id",
-  "userName",
-  "email",
-  "role",
-  "status",
-  "isVerified",
-  "createdAt",
-  "isLoggedOut",
-  "isOnboardingCompleted",
-  "updatedAt",
-  "slug",
-  "pendingEmail"
-];
+//---------1-------
 //des        Signup
-//route      post /api/signup
+//route      post /api/authentication/sign-up
 //access     public
 const signup = asyncHandler(async (req, res) => {
   const { userName, email, password } = req.body;
@@ -32,22 +19,14 @@ const signup = asyncHandler(async (req, res) => {
     email,
     password,
   });
-  // await sendVerificationEmail(user);
-  ////////////////////////////////////////
-   const token = GENERATE_TOKEN({
-    id: user.id,
-    email: user.email,
-    userName: user.userName,
-  });
-  user.isVerified=true;
-  await user.save();
-  //////////////////////////////////////
+  await sendVerificationEmail(user);
+   
   user.password = undefined;
   res.status(201).json({
     status: "SUCCESS",
-    message: "sign up successfully",
+    message: "sign up successfully we send verifiction emial for u",
     data: { user,
-      jwtToken:token },
+      },
     errors: null,
   });
 });
@@ -117,8 +96,11 @@ const sendVerificationEmail = async (user) => {
     html: htmlContent,
   });
 };
+
+
+//------------2---------
 //des        Verify Email
-//route      get /api/verify-email-token/:token
+//route      get /api/authentication/verify-email-token/:token
 //access     public
 const verifyEmail = asyncHandler(async (req, res, next) => {
   const hashedToken = crypto
@@ -162,8 +144,10 @@ const verifyEmail = asyncHandler(async (req, res, next) => {
   });
 });
 
+
+//-------------3---------
 // @desc    Resend Verification E-mail (Manual request)
-// @route   POST /api/resend-verification-email
+// @route   POST /api/authentication/resend-verification-email
 // @access  Public
 const resend_verification_email = asyncHandler(async (req, res, next) => {
   const { identifier } = req.body;
@@ -197,8 +181,11 @@ const resend_verification_email = asyncHandler(async (req, res, next) => {
   });
 });
 
+
+//-------------4---------
+
 //des         sign in
-//route      post /api/sign-in
+//route      post /api/authentication/sign-in
 //access     public
 const signin = asyncHandler(async (req, res, next) => {
   const { identifier, password } = req.body;
@@ -216,8 +203,6 @@ const signin = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Invalid email/username or password", 401));
   }
   const user = await User.findByPk(userRecord.id, {
-    attributes: userAttributes,
-    include: [UserProfile, RestaurantProfile],
   });
   if (!user.isVerified) {
     return res.status(200).json({
@@ -246,9 +231,10 @@ const signin = asyncHandler(async (req, res, next) => {
     errors: null,
   });
 });
+//-------------5---------
 
 // @desc    Logout User
-// @route   POST /api/sign-out
+// @route   POST /api/authentication/sign-out
 // @access  Protected (Requires Token)
 const logout = asyncHandler(async (req, res, next) => {
   const user = await User.findByPk(req.user.id);
@@ -265,8 +251,11 @@ const logout = asyncHandler(async (req, res, next) => {
     errors: null,
   });
 });
+
+//-------------6---------
+
 /// @desc    Forgot Password - Send reset link to email
-// @route   POST /api/forget-password
+// @route   POST /api/authentication/forget-password
 // @access  Public
 const forgetPassword = asyncHandler(async (req, res, next) => {
   const { identifier } = req.body;
@@ -339,8 +328,6 @@ const forgetPassword = asyncHandler(async (req, res, next) => {
         </div>
     `;
   const user = await User.findByPk(userRecord.id, {
-    attributes: userAttributes,
-    include: [UserProfile, RestaurantProfile],
   });
   // 8. Send the email
   try {
@@ -357,7 +344,6 @@ const forgetPassword = asyncHandler(async (req, res, next) => {
       errors: null,
     });
   } catch (err) {
-    // Cleanup on failure
     user.passwordResetTokenHash = null;
     user.passwordResetExpires = null;
     await user.save({
@@ -369,6 +355,8 @@ const forgetPassword = asyncHandler(async (req, res, next) => {
     );
   }
 });
+
+//-------------7---------
 
 // @desc    Verify password reset token
 // @route   GET /api/verify-reset-password-token/:token
@@ -395,8 +383,10 @@ const verifyResetToken = asyncHandler(async (req, res, next) => {
   });
 });
 
+//-------------8---------
+
 // @desc    Set new password using token
-// @route   POST /api/reset-password/:token
+// @route   POST /api/authentication/reset-password
 // @access  Public
 const resetPassword = asyncHandler(async (req, res, next) => {
   const { password, passwordConfirm, identifier } = req.body;
@@ -432,8 +422,8 @@ const resetPassword = asyncHandler(async (req, res, next) => {
   });
   userRecord.password = undefined;
   const user = await User.findByPk(userRecord.id, {
-    attributes: userAttributes,
-    include: [UserProfile, RestaurantProfile],
+    // attributes: userAttributes,
+    // include: [UserProfile, RestaurantProfile],
   });
   if (!user.isVerified) {
     return res.status(200).json({
@@ -451,69 +441,7 @@ const resetPassword = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Protect Middleware to verify if the user logged
-
-const protect = asyncHandler(async (req, res, next) => {
-  let token;
-
-  // الوصول للقيمة بغض النظر عن حالة الأحرف (إذا كنت لا تستخدم Express)
-  const authHeader =
-    req.headers["authorization"] || req.headers["Authorization"];
-
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    token = authHeader.split(" ")[1];
-  }
-  console.log(token);
-  if (!token) {
-    return next(new ApiError("You are not logged in, please login", 401));
-  }
-
-  let decoded;
-  try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
-  } catch (err) {
-    const message =
-      err.name === "TokenExpiredError" ? "Token expired" : "Invalid token";
-    return next(new ApiError(`${message}, please login again`, 401));
-  }
-
-  const currentUser = await User.findByPk(decoded.id);
-  if (!currentUser) {
-    return next(
-      new ApiError("The user belonging to this token no longer exists", 401)
-    );
-  }
-  if (currentUser.passwordChangedAt) {
-    const passwordChangedAtTimestamp = parseInt(
-      currentUser.passwordChangedAt.getTime() / 1000,
-      10
-    );
-
-    if (passwordChangedAtTimestamp > decoded.iat) {
-      return next(
-        new ApiError("User recently changed password! Please login again.", 401)
-      );
-    }
-  }
-  req.authenticatedUser = {
-    id: currentUser.id,
-    role: currentUser.role,
-    passwordChangedAt: currentUser.passwordChangedAt,
-  };
-  next();
-});
-//// @desc    verify the permissons of the user
-
-const allwodTo = (...roles) =>
-  asyncHandler(async (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return next(
-        new ApiError("you are not allow to access to this routes", 403)
-      );
-    }
-    next();
-  });
-
+//-------------9---------
 /// @des      Complete User Onboarding and Update Profile
 // @route    PATCH /api/authentication/user/onboarding
 const userProfile = asyncHandler(async (req, res, next) => {
@@ -578,7 +506,6 @@ const userProfile = asyncHandler(async (req, res, next) => {
     );
   }
   const user = await User.findByPk(userRecord.id, {
-    attributes: userAttributes,
     include: [UserProfile, RestaurantProfile],
   });
   res.status(200).json({
@@ -590,6 +517,8 @@ const userProfile = asyncHandler(async (req, res, next) => {
     errors: null,
   });
 });
+
+//-------------10---------
 /// @des      Complete restaurant Onboarding and Update Profile
 // @route    PATCH /api/authentication/restaurant/onboarding
 const restaurantProfile = asyncHandler(async (req, res, next) => {
@@ -678,7 +607,6 @@ const restaurantProfile = asyncHandler(async (req, res, next) => {
     );
   }
   const user = await User.findByPk(userRecord.id, {
-    attributes: userAttributes,
     include: [UserProfile, RestaurantProfile],
   });
   res.status(200).json({
@@ -690,6 +618,69 @@ const restaurantProfile = asyncHandler(async (req, res, next) => {
     errors: null,
   });
 });
+
+
+// @desc    Protect Middleware to verify if the user logged
+
+const protect = asyncHandler(async (req, res, next) => {
+  let token;
+
+  const authHeader =
+    req.headers["authorization"] || req.headers["Authorization"];
+
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = authHeader.split(" ")[1];
+  }
+  console.log(token);
+  if (!token) {
+    return next(new ApiError("You are not logged in, please login", 401));
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    const message =
+      err.name === "TokenExpiredError" ? "Token expired" : "Invalid token";
+    return next(new ApiError(`${message}, please login again`, 401));
+  }
+
+  const currentUser = await User.findByPk(decoded.id);
+  if (!currentUser) {
+    return next(
+      new ApiError("The user belonging to this token no longer exists", 401)
+    );
+  }
+  if (currentUser.passwordChangedAt) {
+    const passwordChangedAtTimestamp = parseInt(
+      currentUser.passwordChangedAt.getTime() / 1000,
+      10
+    );
+
+    if (passwordChangedAtTimestamp > decoded.iat) {
+      return next(
+        new ApiError("User recently changed password! Please login again.", 401)
+      );
+    }
+  }
+  req.authenticatedUser = {
+    id: currentUser.id,
+    role: currentUser.role,
+    passwordChangedAt: currentUser.passwordChangedAt,
+  };
+  next();
+});
+//// @desc    verify the permissons of the user
+
+const allwodTo = (...roles) =>
+  asyncHandler(async (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return next(
+        new ApiError("you are not allow to access to this routes", 403)
+      );
+    }
+    next();
+  });
 
 module.exports = {
   signup,

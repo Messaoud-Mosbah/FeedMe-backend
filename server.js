@@ -11,6 +11,7 @@ const ApiError = require("./utils/apiError");
 const globalError = require("./middlewares/errorMiddleware");
 
 const userRouter = require("./routes/userRoute");
+
 const authRouter = require("./routes/authRoute");
 const editProfileRouter = require("./routes/editProfileRoute");
 const viewProfileRouter = require("./routes/viewProfileRoute");
@@ -42,7 +43,7 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
   console.log(`mode: ${process.env.NODE_ENV}`);
 }
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use("/api/users", userRouter);
 app.use("/api/authentication", authRouter);
 app.use("/api/profile", editProfileRouter);
@@ -52,6 +53,8 @@ app.use("/api/products", productRoutes);
 app.use("/api/store", storeRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
+// app.use("/api/likes", likeRoute);
+
 
 app.all("*", (req, res, next) => {
   next(new ApiError(`Can't find this route: ${req.originalUrl}`, 400));

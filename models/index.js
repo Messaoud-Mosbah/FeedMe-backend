@@ -5,6 +5,13 @@ const { sequelize } = require("../config/database");
 
 const User = require("./userModel");
 const UserProfile = require("./userProfileModel");
+
+const Comment = require("./comment");
+
+
+const Like = require("./like"); 
+
+
 const RestaurantProfile = require("./restaurantProfileModel");
 const Post = require("./postModel");
 const PostMedia = require("./PostMedia");
@@ -141,6 +148,22 @@ OrderItem.belongsTo(Product, {
   foreignKey: "productId",
   as: "product",
 });
+// ── User <=> Like
+User.hasMany(Like, {
+  foreignKey: { name: "userId", type: DataTypes.UUID },
+  onDelete: "CASCADE",
+});
+Like.belongsTo(User, { foreignKey: "userId" });
+
+Product.hasMany(Like, {
+  foreignKey: { name: "productId", type: DataTypes.UUID },
+  onDelete: "CASCADE",
+  as: "likes", 
+});
+Like.belongsTo(Product, { foreignKey: "productId", as: "product" });
+
+Product.hasMany(Comment, { foreignKey: 'productId', as: 'comments' });
+Comment.belongsTo(Product, { foreignKey: 'productId' });
 module.exports = {
   sequelize,
   User,

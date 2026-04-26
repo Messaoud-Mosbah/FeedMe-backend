@@ -40,4 +40,6 @@ router.patch(
 
 router.delete("/:id", productIdValidator, deleteProduct);
 
+
+
 module.exports = router;

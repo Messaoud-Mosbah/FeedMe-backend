@@ -16,6 +16,7 @@ const {
   restaurantProfile,
   userProfile,
   protect,
+  allwodTo,
 } = require("../services/authService");
 
 const {
@@ -28,7 +29,9 @@ const {
 } = require("../utils/validators/authValidators");
 
 router.post("/sign-up", signupValidator, signup);
+
 router.get("/verify-email-token/:token", verifyEmail);
+
 router.post("/resend-verification-email", resend_verification_email);
 
 router.post("/sign-out", protect, logout);
@@ -36,6 +39,7 @@ router.post("/sign-out", protect, logout);
 router.post("/sign-in", loginValidator, signin);
 
 router.post("/forget-password", forgetPassword);
+
 router.get("/verify-reset-password-token/:token", verifyResetToken);
 ////////////////////////////////////
 router.post("/reset-password", validatePassword, resetPassword);
@@ -47,7 +51,9 @@ router.patch(
   userProfile
 );
 router.patch(
+
   "/restaurant/onboarding",
+
   protect,
   restaurantProfileValidator,
   restaurantProfile
