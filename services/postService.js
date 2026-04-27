@@ -199,8 +199,10 @@ const getOnePost = asyncHandler(async (req, res, next) => {
 });
 
 
-// ── UPDATE ────────────────────────────
 const updatePost = asyncHandler(async (req, res, next) => {
+  console.log("Body:", req.body)
+  console.log("Files:", req.files)
+  
   const { id } = req.params;
   const { title, description, contentType, keptMediaIds } = req.body; 
   const images = req.files?.images || [];
@@ -219,19 +221,17 @@ const updatePost = asyncHandler(async (req, res, next) => {
       contentType: contentType ?? post.contentType,
     }, { transaction });
 
-  // 1. تأكد من أن الـ keptIds هي مصفوفة من النصوص (UUIDs)
-const keptIds = keptMediaIds ? JSON.parse(keptMediaIds) : [];
+    const keptIds = keptMediaIds ? JSON.parse(keptMediaIds) : [];
 
-// 2. استخدام التعديل التالي لتجنب مشاكل MySQL مع UUID
-await PostMedia.destroy({
-  where: {
-    postId: post.id,
-    id: { 
-      [Op.notIn]: keptIds.length > 0 ? keptIds : ['NULL_PLACEHOLDER'] 
-    }
-  },
-  transaction
-});
+    await PostMedia.destroy({
+      where: {
+        postId: post.id,
+        id: { 
+          [Op.notIn]: keptIds.length > 0 ? keptIds : ['NULL_PLACEHOLDER'] 
+        }
+      },
+      transaction
+    });
 
     const mediaData = [];
     images.forEach((img, index) => {
@@ -256,43 +256,35 @@ await PostMedia.destroy({
       await PostMedia.bulkCreate(mediaData, { transaction });
     }
 
-const remainingImagesCount = await PostMedia.count({ 
-  where: { 
-    postId: post.id, 
-    type: 'IMAGE' 
-  }, 
-  transaction 
-});
+    const remainingImagesCount = await PostMedia.count({ 
+      where: { postId: post.id, type: 'IMAGE' }, 
+      transaction 
+    });
 
-const remainingVideosCount = await PostMedia.count({ 
-  where: { 
-    postId: post.id, 
-    type: 'VIDEO' 
-  }, 
-  transaction 
-});    
-let newMediaType = "NONE";
+    const remainingVideosCount = await PostMedia.count({ 
+      where: { postId: post.id, type: 'VIDEO' }, 
+      transaction 
+    });    
 
-if (remainingImagesCount > 0 ) {
-    newMediaType = "IMAGE";
+    let newMediaType = "NONE";
+    if (remainingImagesCount > 0) {
+      newMediaType = "IMAGE";
+    } else if (remainingVideosCount > 0) {
+      newMediaType = "VIDEO";
+    }
 
-} else if (remainingVideosCount > 0) {
-    newMediaType = "VIDEO";
-}else{
-      newMediaType = "NONE";
-}
-
-await post.update({ mediaType: newMediaType }, { transaction });
+    await post.update({ mediaType: newMediaType }, { transaction });
     await transaction.commit();
 
     res.status(200).json({ status: "SUCCESS", message: "Post updated successfully", data: { post } });
 
   } catch (error) {
+    console.log("ERROR MESSAGE:", error.message)
+    console.log("ERROR FULL:", error)
     await transaction.rollback();
     next(error);
   }
 });
-
 // ── DELETE ────────────────────────────
 
 const deletePost = asyncHandler(async (req, res, next) => {

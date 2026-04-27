@@ -63,7 +63,7 @@ exports.getIncomingOrders = asyncHandler(async (req, res, next) => {
           {
             model: Product,
             as: "product",
-            attributes: ["id", "name", "image", "price"],
+            attributes: ["id","description", "name", "image", "price"],
           },
         ],
       },
@@ -89,6 +89,7 @@ exports.getIncomingOrders = asyncHandler(async (req, res, next) => {
       createdAt: order.createdAt,
       product: item.product,
       quantity: item.quantity,
+      description:item.description,
       user: {
         id: order.User?.id,
         userName: order.User?.userName,
@@ -112,7 +113,7 @@ exports.getAcceptedOrders = asyncHandler(async (req, res, next) => {
   const profile = await RestaurantProfile.findOne({ where: { userId } });
   if (!profile) return next(new ApiError("Restaurant profile not found", 404));
 
-  const oneHourAgo = new Date(Date.now() - 10 * 60 * 1000);
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
   const orders = await Order.findAll({
     where: {
@@ -128,7 +129,7 @@ exports.getAcceptedOrders = asyncHandler(async (req, res, next) => {
           {
             model: Product,
             as: "product",
-            attributes: ["id", "name", "image", "price"],
+            attributes: ["id", "name","description", "image", "price"],
           },
         ],
       },
@@ -154,6 +155,8 @@ exports.getAcceptedOrders = asyncHandler(async (req, res, next) => {
       createdAt: order.createdAt,
       product: item.product,
       quantity: item.quantity,
+            description:item.description,
+
       user: {
         id: order.User?.id,
         userName: order.User?.userName,
